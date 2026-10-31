@@ -26,12 +26,13 @@ export interface JobContext {
 }
 export type Handler = (ctx: JobContext) => Promise<unknown>;
 
-const LEASE_S = 120;
+const LEASE_S = 240; // video analysis can take a few minutes
 const registry: Record<string, () => Promise<Handler>> = {
   activity_import: async () => (await import('./activity-import')).importUpload,
   coros_sync: async () => (await import('./coros-sync')).corosSync,
   coros_route_push: async () => (await import('./coros-push')).pushRoute,
   coros_workout_push: async () => (await import('./coros-push')).pushWorkout,
+  form_analysis: async () => (await import('./form-analysis')).analyzeForm,
 };
 
 /**

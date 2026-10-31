@@ -13,6 +13,7 @@ import {
   TriangleAlert,
   CalendarDays,
   Footprints,
+  ScanEye,
   Settings,
   Menu,
   SunMoon,
@@ -35,6 +36,7 @@ const links = [
   ['/app/conditions', 'Conditions', TriangleAlert],
   ['/app/training', 'Training', CalendarDays],
   ['/app/gear', 'Gear', Footprints],
+  ['/app/form', 'Form', ScanEye],
   ['/app/settings', 'Settings', Settings],
 ] as const;
 export function Shell({

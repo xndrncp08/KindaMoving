@@ -9,7 +9,10 @@
 - `npm run build` — production Next build, no credentials required for public pages.
 - `npm run check` — all five checks above.
 - `npx playwright install chromium && npm run test:e2e` — desktop Chrome and Chromium mobile emulation. Runs a local development server without Supabase credentials.
-- `python3 scripts/test-database.py` — creates and destroys its own isolated PostgreSQL cluster, applies all migrations, then tests relational CRUD and ownership with two identities. Needs PostgreSQL binaries, PostGIS and Python 3. Never connects to an existing database.
+- `python3 scripts/test-database.py` — creates and destroys its own isolated PostgreSQL cluster (UTF-8, default PG 17 + PostGIS), applies **all** migrations, then runs every `supabase/tests/*.sql` suite with multiple identities. `--then "<cmd>"` runs a command against the migrated database (`KM_TEST_DATABASE_URL`) before teardown, e.g. the PostGIS routing integration tests. Never connects to an existing database.
+- `cd services/analytics && .venv/bin/python -m pytest -q` — processing, metrics (incl. property-based), analysis, routing (synthetic city), ghost, form, API boundary.
+- `python3 scripts/test-database.py --then "services/analytics/.venv/bin/python -m pytest -q services/analytics/tests/test_network_db.py"` — real Calgary OSM network through PostGIS.
+- `ANALYTICS_URL=… npx vitest run tests/analytics.integration.test.ts` (in `apps/web`) — live TS → Python round trip.
 - `python3 scripts/test-database.py --without-postgis` — explicit alternative that substitutes only the spatial columns and skips PostGIS/GiST installation. All other DDL, functions, constraints, RLS policies and SQL assertions execute against real PostgreSQL.
 
 ## Coverage and evidence
@@ -35,3 +38,16 @@ The release audit reports no production dependency vulnerabilities. The full dev
 ## Required external acceptance
 
 With a dedicated Supabase test project: apply migrations, inspect advisors, test signup confirmation, password login, session refresh, recovery, Google if enabled, onboarding, all CRUD screens, storage upload failure/success and direct REST isolation with two users. Test map rendering with actual geometry/network tiles. Verify device keyboard/focus, dark theme and navigation on real mobile hardware. No credentials were available for these checks in the initial implementation session.
+
+## Phase 2 results (2026-10-31, local)
+
+| Suite                                        | Result                                                                                               |
+| -------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| Vitest (web)                                 | 105 passed, 2 skipped (live-service integration, run separately: passed)                             |
+| pytest (analytics)                           | 69 passed, 4 skipped (PostGIS network suite, run via the harness: 4 passed)                          |
+| SQL contract suites on PG 17.x + PostGIS 3.7 | 10 passed (ownership, jobs/import, analytics, COROS vault, routes, conditions, training, gear, form) |
+| `npm run check`                              | lint (0 errors), typecheck, tests, Prettier, production build: passed                                |
+
+Edge cases covered: corrupted/truncated FIT, DTD/entity GPX, missing GPS samples, null-island fixes, backwards device clock jumps, out-of-order samples, cross-midnight local dates, auto-pause gaps, duplicate imports across channels, conflicting and stale condition reports, disconnected roads (island), unreachable tempo constraints, off-network geometry, failed OAuth refresh and refresh races, offline queue and reconnection, account switching purge, large (6 h) activities.
+
+Not verified here: live COROS account flows, hosted Supabase Auth/Storage end-to-end (see README for the hosted status), physical mobile devices, MediaPipe accuracy on real footage.

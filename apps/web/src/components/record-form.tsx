@@ -6,6 +6,7 @@ import { resourceSchemas, type Resource, type Shoe } from '@km/types';
 import { Button, Input, ErrorState } from '@km/ui';
 import { useRecordMutation } from '@/lib/queries';
 import { useUnsaved } from './unsaved';
+import { useDraft } from './use-draft';
 import { toast } from 'sonner';
 const today = () => new Date().toLocaleDateString('en-CA');
 const defaults = {
@@ -57,6 +58,7 @@ export function RecordForm({
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors, isDirty },
   } = useForm({
     resolver: zodResolver(schema),
@@ -67,6 +69,14 @@ export function RecordForm({
   const imported =
     name === 'activities' && !!record?.source && record.source !== 'manual';
   useUnsaved(isDirty);
+  // Unsaved edits survive reloads and offline periods as a local draft.
+  const draft = useDraft(
+    userId,
+    `${name}:${String(record?.id ?? 'new')}`,
+    (record?.updated_at as string | undefined) ?? null,
+    JSON.stringify(watch()),
+    isDirty,
+  );
   return (
     <form
       className="form-grid"
@@ -78,6 +88,7 @@ export function RecordForm({
           },
           {
             onSuccess: () => {
+              draft.clear();
               reset(values);
               toast.success('Saved. A little progress.');
               onSaved();
@@ -86,6 +97,28 @@ export function RecordForm({
         ),
       )}
     >
+      {draft.pending && (
+        <div className="notice full" role="status">
+          {draft.pending.status === 'conflict'
+            ? 'You have unsaved changes from earlier, but this record has changed since. Restoring will overwrite the newer version when you save.'
+            : 'You have unsaved changes from earlier.'}{' '}
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={() => {
+              reset(JSON.parse(draft.pending!.draft.value), {
+                keepDefaultValues: true,
+              });
+              draft.dismiss();
+            }}
+          >
+            Restore
+          </Button>
+          <Button type="button" variant="ghost" onClick={draft.dismiss}>
+            Discard
+          </Button>
+        </div>
+      )}
       <label className="full">
         Name
         <Input {...register('title')} />

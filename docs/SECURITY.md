@@ -38,6 +38,13 @@ COROS ◀──(OAuth 2.1 + PKCE, public client)── server only; tokens seale
 5. Supabase grants default privileges on new `public` objects to `anon`/`authenticated`; every Phase 2 table and function revokes explicitly instead of relying on RLS alone.
 6. `Permissions-Policy` blocked geolocation needed for route starts; now `geolocation=(self)` (camera and microphone still denied).
 
+## Hosted project status (Supabase `yqzbsuandpdlvgtgnwln`, 2026-10-31)
+
+All 11 migrations are applied and recorded in `supabase_migrations.schema_migrations` (PostgreSQL 17.11, PostGIS 3.3.7). There are 24 public tables, all with RLS, and three private buckets. Every PostGIS function the code uses was smoke-tested on 3.3.7.
+
+- **Security advisor**: 0 errors. 10 warnings, all "signed-in users can execute a SECURITY DEFINER function", reviewed and intended: `cancel_job`, `enqueue_job`, `register_upload`, `request_form_analysis`, `save_route`, `report_condition`, `vote_condition`, `conditions_near`, `route_corridor_ids`, `hit_rate_limit`. Each pins ownership to `auth.uid()`, validates inputs and applies its own limits; definer rights are needed to write worker-owned columns or read masked community data. No worker-only function is callable by clients, and nothing is callable by `anon`.
+- **Performance advisor**: 0 errors, 0 warnings. 15 unindexed-foreign-key suggestions were fixed by `20261031200000_fk_indexes`. The remaining `saved_routes (route_id, user_id)` is covered by the unique `(user_id, route_id)` index (column-order false positive). "Unused index" suggestions reflect an empty database.
+
 ## Residual risks and recommendations
 
 - No Content-Security-Policy yet (MapLibre needs `blob:` workers and tile hosts; add a tested CSP before public launch).

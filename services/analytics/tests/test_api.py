@@ -58,3 +58,15 @@ def test_ghost_endpoint_validates_and_aligns(client):
     assert client.post("/v1/ghost/align", json={"ref": {}}, headers=auth()).status_code == 400
     r = client.post("/v1/ghost/align", json={"ref": {"streams": streams(LOOP, 3.0)}, "ghost": {"streams": streams(LOOP, 2.9)}}, headers=auth())
     assert r.status_code == 200 and r.json()["status"] == "ok"
+
+
+def test_form_endpoint_requires_configuration(client, monkeypatch):
+    monkeypatch.delenv("FORM_MODEL_PATH", raising=False)
+    assert client.post("/v1/form/analyze", content=b"x", headers=auth()).status_code == 503
+    from .test_form import MODEL
+
+    if MODEL.exists():
+        monkeypatch.setenv("FORM_MODEL_PATH", str(MODEL))
+        assert client.post("/v1/form/analyze?suffix=avi", content=b"x", headers=auth()).status_code == 400
+        r = client.post("/v1/form/analyze", content=b"not a video", headers=auth())
+        assert r.status_code == 422 and r.json()["code"] == "invalid_video"

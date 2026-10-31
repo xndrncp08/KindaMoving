@@ -13,6 +13,8 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest==9.2.0", "hypothesis==6.170.14", "httpx"]
+# Optional KM Form (video pose analysis). Also needs FORM_MODEL_PATH -> pose_landmarker_lite.task.
+form = ["mediapipe==1.2.0", "opencv-python-headless==5.0.0"]
 
 [tool.setuptools]
 packages = ["km_analytics"]

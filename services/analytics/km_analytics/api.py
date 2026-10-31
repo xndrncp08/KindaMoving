@@ -175,3 +175,36 @@ async def ghost_align(request: Request) -> dict:
     from .ghost import align
 
     return await run_in_threadpool(align, {"streams": ref}, {"streams": ghost})
+
+
+FORM_MAX_BYTES = 50 * 1024 * 1024
+
+
+@app.post("/v1/form/analyze", dependencies=[Depends(require_service_token)])
+async def form_analyze(request: Request, suffix: str = "mp4", annotate: bool = True) -> dict:
+    """Raw video bytes in the body. Requires the optional [form] extra and FORM_MODEL_PATH."""
+    import base64
+    import tempfile
+
+    model = os.environ.get("FORM_MODEL_PATH", "")
+    try:
+        from .form import FormVideoError, analyze_video
+    except ImportError as exc:  # pragma: no cover - depends on optional extra
+        raise HTTPException(503, "Form analysis is not installed on this server.") from exc
+    if not model or not os.path.exists(model):
+        raise HTTPException(503, "Form analysis model is not configured.")
+    if suffix not in ("mp4", "mov", "m4v"):
+        raise HTTPException(400, "Use MP4 or MOV.")
+    data = await _body(request, FORM_MAX_BYTES)
+    with tempfile.TemporaryDirectory() as tmp:
+        src, out = os.path.join(tmp, "in." + suffix), os.path.join(tmp, "annotated.mp4")
+        with open(src, "wb") as f:
+            f.write(data)
+        try:
+            result = await run_in_threadpool(analyze_video, src, model, annotate, out if annotate else None)
+        except FormVideoError as exc:
+            return JSONResponse({"error": str(exc), "code": "invalid_video"}, status_code=422)
+        if annotate and os.path.exists(out) and os.path.getsize(out) > 0:
+            with open(out, "rb") as f:
+                result["annotated_mp4_base64"] = base64.b64encode(f.read()).decode()
+    return result

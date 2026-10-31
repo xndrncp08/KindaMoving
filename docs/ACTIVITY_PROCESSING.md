@@ -42,6 +42,7 @@ while jobs are active)            └─ importUpload: ownership re-check → do
 
 - `start_time` is the exact UTC instant. `started_at` is the local calendar date, used for weekly totals and the calendar.
 - FIT supplies the local offset (`activity.local_timestamp − timestamp`, rounded to 15 min). GPX has none, so the browser's IANA zone is the fallback, evaluated at the activity's start instant (DST-correct) and flagged `timezone_assumed`.
+- Offsets come from the runtime's IANA time-zone database. **Alberta (America/Edmonton, the pilot city) moved to permanent UTC−6 from November 2026**, so servers and CI must run a tz database newer than 2026a (Node and Python update it with their releases) or Calgary times after 2026-11-01 will be off by an hour.
 - `crosses_midnight` is set when the local end date differs. The activity belongs to its local **start** date.
 
 ## Failure handling

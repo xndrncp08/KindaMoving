@@ -2,14 +2,20 @@ import { describe, it, expect } from 'vitest';
 import { zonedToUtc } from '@/lib/routes/time';
 import { mapDetour, mapIncident } from '@/lib/server/official';
 import { envBetween } from '@/lib/server/conditions';
+// DST mechanics are tested on America/Denver, whose rules are stable. America/Edmonton is not
+// hard-coded across November 2026: Alberta moved to permanent UTC-6 (IANA tz update after
+// 2026a), so its offset after that date depends on the runtime's tz database version.
 describe('time zones', () => {
-  it('converts Calgary wall-clock time across DST', () => {
+  it('converts wall-clock time across a DST change', () => {
     expect(
-      zonedToUtc('2026-10-30T09:00:00.000', 'America/Edmonton')!.toISOString(),
+      zonedToUtc('2026-10-30T09:00:00.000', 'America/Denver')!.toISOString(),
     ).toBe('2026-10-30T15:00:00.000Z'); // MDT -6
     expect(
-      zonedToUtc('2026-11-02T09:00:00.000', 'America/Edmonton')!.toISOString(),
+      zonedToUtc('2026-11-02T09:00:00.000', 'America/Denver')!.toISOString(),
     ).toBe('2026-11-02T16:00:00.000Z'); // MST -7
+    expect(
+      zonedToUtc('2026-10-30T09:00:00.000', 'America/Edmonton')!.toISOString(),
+    ).toBe('2026-10-30T15:00:00.000Z'); // -6 in every tz version
     expect(zonedToUtc('garbage', 'America/Edmonton')).toBeNull();
   });
 });
@@ -31,7 +37,7 @@ describe('City of Calgary mappers (rows captured from data.calgary.ca, 2026-10-3
     expect(o).toMatchObject({
       kind: 'closure',
       severity: 3,
-      ends_at: new Date('2026-11-01T23:00:00.000Z'),
+      ends_at: zonedToUtc('2026-11-01T16:00:00.000', 'America/Edmonton'),
     });
     expect(o.description).not.toMatch(/[¿\t]/);
   });

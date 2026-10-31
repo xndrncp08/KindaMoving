@@ -1,1 +1,26 @@
-{"name":"kindamoving","private":true,"workspaces":["apps/*","packages/*"],"engines":{"node":">=22"},"scripts":{"dev":"npm run dev -w @km/web","build":"npm run build -w @km/web","lint":"npm run lint -w @km/web","typecheck":"npm run typecheck -w @km/web","test":"npm run test -w @km/web","test:e2e":"npm run test:e2e -w @km/web","format":"prettier --write .","format:check":"prettier --check .","check":"npm run lint && npm run typecheck && npm test && npm run format:check && npm run build"},"devDependencies":{"prettier":"3.8.1","supabase":"2.122.0"}}
+{
+  "name": "kindamoving",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @km/web",
+    "build": "npm run build -w @km/web",
+    "lint": "npm run lint -w @km/web",
+    "typecheck": "npm run typecheck -w @km/web",
+    "test": "npm run test -w @km/web",
+    "test:e2e": "npm run test:e2e -w @km/web",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run lint && npm run typecheck && npm test && npm run format:check && npm run build"
+  },
+  "devDependencies": {
+    "prettier": "3.8.1",
+    "supabase": "2.122.0"
+  }
+}

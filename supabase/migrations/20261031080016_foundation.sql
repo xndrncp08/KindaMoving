@@ -106,7 +106,7 @@ create function public.save_profile(input jsonb) returns void language plpgsql s
 begin
  if auth.uid() is null then raise exception 'Authentication required'; end if;
  insert into public.profiles(id,preferred_name,country,city,experience,weekly_distance_m,race_distance,goals)
- values(auth.uid(),input->>'preferred_name',input->>'country',input->>'city',input->>'experience',(input->>'weekly_distance_m')::numeric,input->>'race_distance',input->>'goals)
+ values(auth.uid(),input->>'preferred_name',input->>'country',input->>'city',input->>'experience',(input->>'weekly_distance_m')::numeric,input->>'race_distance',input->>'goals')
  on conflict(id) do update set preferred_name=excluded.preferred_name,country=excluded.country,city=excluded.city,experience=excluded.experience,weekly_distance_m=excluded.weekly_distance_m,race_distance=excluded.race_distance,goals=excluded.goals;
  insert into public.user_preferences(id,units,private_profile,notifications)
  values(auth.uid(),input->>'units',(input->>'private_profile')::boolean,(input->>'notifications')::boolean)

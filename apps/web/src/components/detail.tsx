@@ -1,9 +1,9 @@
 'use client';
-import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import type { Activity, Resource } from '@km/types';
 import { ActivityAnalysis } from './activity-analysis';
+import { RouteDetail } from './route-detail';
 import { Card, ErrorState, Skeleton, EmptyState } from '@km/ui';
 import {
   recordsQuery,
@@ -14,10 +14,6 @@ import {
 import { distance } from '@/lib/metrics';
 import { RecordForm } from './record-form';
 import { toast } from 'sonner';
-const RouteMap = dynamic(() => import('./route-map'), {
-  ssr: false,
-  loading: () => <Skeleton />,
-});
 export function Detail({
   name,
   id,
@@ -65,7 +61,14 @@ export function Detail({
           units={profile.data?.units}
         />
       )}
-      {name === 'routes' && <RouteMap geometry={r.path} />}
+      {name === 'routes' && (
+        <RouteDetail
+          route={
+            record as unknown as Parameters<typeof RouteDetail>[0]['route']
+          }
+          userId={userId}
+        />
+      )}
       {name === 'shoes' && (
         <Card>
           <h2>Shoe history</h2>

@@ -35,10 +35,49 @@ export const useMap = create<{
   setViewport: (viewport) => set({ viewport }),
   select: (selectedId) => set({ selectedId }),
 }));
+export interface Waypoint {
+  lat: number;
+  lon: number;
+}
+/** Interactive waypoint editing for one route; the computed path stays in Query. */
 export const useRouteEditor = create<{
+  routeId: string | null;
+  waypoints: Waypoint[];
   dirty: boolean;
   setDirty: (v: boolean) => void;
-}>((set) => ({ dirty: false, setDirty: (dirty) => set({ dirty }) }));
+  begin: (routeId: string, waypoints: Waypoint[]) => void;
+  add: (w: Waypoint) => void;
+  remove: (i: number) => void;
+  move: (i: number, by: -1 | 1) => void;
+  closeLoop: () => void;
+}>((set) => ({
+  routeId: null,
+  waypoints: [],
+  dirty: false,
+  setDirty: (dirty) => set({ dirty }),
+  begin: (routeId, waypoints) => set({ routeId, waypoints, dirty: false }),
+  add: (w) =>
+    set((s) => ({ waypoints: [...s.waypoints, w].slice(0, 60), dirty: true })),
+  remove: (i) =>
+    set((s) => ({
+      waypoints: s.waypoints.filter((_, k) => k !== i),
+      dirty: true,
+    })),
+  move: (i, by) =>
+    set((s) => {
+      const w = [...s.waypoints];
+      const j = i + by;
+      if (j < 0 || j >= w.length) return s;
+      [w[i], w[j]] = [w[j], w[i]];
+      return { waypoints: w, dirty: true };
+    }),
+  closeLoop: () =>
+    set((s) =>
+      s.waypoints.length > 1
+        ? { waypoints: [...s.waypoints, s.waypoints[0]], dirty: true }
+        : s,
+    ),
+}));
 export const useWorkoutBuilder = create<{
   draftTitle: string;
   setDraftTitle: (s: string) => void;

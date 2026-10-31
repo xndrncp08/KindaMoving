@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { Activity, Resource } from '@km/types';
 import { ActivityAnalysis } from './activity-analysis';
 import { RouteDetail } from './route-detail';
+import { cachedRecord } from '@/lib/offline/drafts';
 import { WorkoutPanel } from './workout-panel';
 import { ShoeWear } from './gear-overview';
 import { Card, ErrorState, Skeleton, EmptyState } from '@km/ui';
@@ -26,11 +27,35 @@ export function Detail({
   userId: string;
 }) {
   const query = useQuery(detailQuery(userId, name, id));
+  const offlineCopy = useQuery({
+    queryKey: ['offline-copy', userId, name, id],
+    queryFn: () => cachedRecord<Record<string, unknown>>(userId, `route:${id}`),
+    enabled: name === 'routes' && !!query.error,
+  });
   const summary = useQuery(summaryQuery(userId));
   const shoes = useQuery(recordsQuery(userId, 'shoes'));
   const activities = useQuery(recordsQuery(userId, 'activities'));
   const profile = useQuery(profileQuery(userId));
   if (query.isPending) return <Skeleton />;
+  if (query.error && name === 'routes' && offlineCopy.data)
+    return (
+      <div className="stack">
+        <p className="notice">
+          Offline copy saved{' '}
+          {new Date(offlineCopy.data.saved_at).toLocaleString()}. Editing needs
+          a connection.
+        </p>
+        <h1 className="page-title">{String(offlineCopy.data.value.title)}</h1>
+        <RouteDetail
+          route={
+            offlineCopy.data.value as unknown as Parameters<
+              typeof RouteDetail
+            >[0]['route']
+          }
+          userId={userId}
+        />
+      </div>
+    );
   if (query.error) return <ErrorState message={query.error.message} />;
   const record = query.data;
   if (!record)

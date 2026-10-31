@@ -167,7 +167,7 @@ def end_node(g: Graph, start: int, steps: Steps) -> int:
 def route_between(g: Graph, costs: Costs, a: int, b: int, reuse: set[int] | frozenset = frozenset(), prev_edge: int | None = None) -> Steps | None:
     if a == b:
         return []
-    dist, prev, _ = g.dijkstra(a, lambda e, n, p: costs.step(e, n, p if p is not None else (prev_edge if n == a else None), reuse))
+    dist, prev, _ = g.dijkstra(a, lambda e, n, p: costs.step(e, n, p if p is not None else (prev_edge if n == a else None), reuse), target=b)
     if b not in dist:
         return None
     return Graph.path(prev, g.edges, a, b)

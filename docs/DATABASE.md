@@ -32,3 +32,18 @@ Storage: private `activity-files` bucket, 5 MB object limit, allowed GPX/XML/oct
 ## Seed
 
 Automatic seed is intentionally empty. `scripts/seed-development.sql` requires an existing local auth UUID and labels every fixture `[DEV]`. Do not use it on production.
+
+## Phase 2 migrations
+
+| Migration                            | Adds                                                                                                                                       |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| `20261031120000_activity_processing` | timestamped/sourced activities, streams, laps, upload hashes, job queue state machine + leases, `import_activity`, client write boundaries |
+| `20261031130000_analytics`           | `comparable_candidates`                                                                                                                    |
+| `20261031140000_coros`               | provider account fields, `private.provider_clients`, `private.provider_tokens`, `provider_records`, vault RPCs                             |
+| `20261031150000_routes_network`      | network nodes/edges/imports (read-only role), route geometry fields, `save_route`, rate limiter                                            |
+| `20261031160000_conditions`          | reports, votes, moderation, masked `conditions_near`, corridor RPCs, official upsert                                                       |
+| `20261031170000_training`            | workout kind/status/steps/plan/compliance/route, plan creation and change RPCs                                                             |
+| `20261031180000_gear`                | purchase/retirement/lifespan/default, wear observations, default attribution trigger, `gear_analytics`, `assign_shoe`                      |
+| `20261031190000_form`                | private video buckets, `form_analyses`, `request_form_analysis`                                                                            |
+
+Every new table enables RLS and revokes Supabase's default `anon`/`authenticated` grants explicitly before granting what clients need. Spatial data uses SRID 4326 with GiST indexes (activity tracks, route paths, network, condition locations).

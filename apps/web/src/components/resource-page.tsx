@@ -372,7 +372,19 @@ export function ResourcePage({
       {name === 'activities' && comparisons.length > 0 && (
         <Card>
           <h2>Selected activities</h2>
-          <p className="muted">Basic comparison · up to four runs</p>
+          <p className="muted">
+            Basic comparison · up to four runs
+            {comparisons.length === 2 && (
+              <>
+                {' · '}
+                <Link
+                  href={`/app/activities/compare?a=${comparisons[0]}&b=${comparisons[1]}`}
+                >
+                  Detailed comparison ↗
+                </Link>
+              </>
+            )}
+          </p>
           <div className="grid">
             {activities.data
               ?.filter((a) => comparisons.includes(a.id))

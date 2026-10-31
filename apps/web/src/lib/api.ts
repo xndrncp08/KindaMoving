@@ -58,9 +58,9 @@ export const columns: Record<string, { list: string; detail: string }> = {
       ',elevation_loss_m,max_hr,avg_cadence,source_ref,device,metrics,weather,analytics_version,track:track::json',
   },
   routes: {
-    list: 'id,user_id,title,description,distance_m,created_at,updated_at',
+    list: 'id,user_id,title,description,distance_m,source,created_at,updated_at',
     detail:
-      'id,user_id,title,description,distance_m,created_at,updated_at,path:path::json',
+      'id,user_id,title,description,distance_m,source,waypoints,generation,validation,created_at,updated_at,path:path::json',
   },
   shoes: { list: '*', detail: '*' },
   workouts: { list: '*', detail: '*' },

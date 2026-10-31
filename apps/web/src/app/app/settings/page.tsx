@@ -2,6 +2,7 @@ import { requireUser } from '@/lib/session';
 import { ProfileForm } from '@/components/profile-form';
 import { PasswordForm } from '@/components/password-form';
 import { Card } from '@km/ui';
+import { CorosCard } from '@/components/coros-card';
 export default async function Page() {
   const { user } = await requireUser();
   return (
@@ -21,11 +22,7 @@ export default async function Page() {
       </Card>
       <Card>
         <h2>Connected devices</h2>
-        <p className="badge">COROS · Not available</p>
-        <p className="muted">
-          OAuth and synchronization are reserved for Phase 2. No device
-          connection is active in this release.
-        </p>
+        <CorosCard userId={user.id} />
       </Card>
     </div>
   );

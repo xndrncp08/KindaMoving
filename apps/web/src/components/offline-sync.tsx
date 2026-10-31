@@ -38,6 +38,8 @@ export function OfflineSync({ userId }: { userId: string }) {
     };
     const down = () => set({ online: false });
     set({ online: navigator.onLine });
+    if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator)
+      void navigator.serviceWorker.register('/sw.js').catch(() => undefined);
     void purgeOtherUsers(userId)
       .then(() => refreshCounts(userId))
       .then(() => {

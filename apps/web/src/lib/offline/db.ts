@@ -84,6 +84,13 @@ export const allFor = <T>(store: StoreName, userId: string) =>
 
 /** Remove every record not belonging to `keepUserId` (or everything when null): shared-device privacy. */
 export async function purgeOtherUsers(keepUserId: string | null) {
+  // Signing out (null) also drops service-worker page caches, which may hold personalised HTML.
+  if (
+    keepUserId === null &&
+    typeof navigator !== 'undefined' &&
+    navigator.serviceWorker?.controller
+  )
+    navigator.serviceWorker.controller.postMessage('purge');
   let db: IDBDatabase;
   try {
     db = await openDb();

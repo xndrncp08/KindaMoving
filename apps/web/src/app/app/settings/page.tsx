@@ -3,6 +3,7 @@ import { ProfileForm } from '@/components/profile-form';
 import { PasswordForm } from '@/components/password-form';
 import { Card } from '@km/ui';
 import { CorosCard } from '@/components/coros-card';
+import { AccountData } from '@/components/account-data';
 export default async function Page() {
   const { user } = await requireUser();
   return (
@@ -19,6 +20,10 @@ export default async function Page() {
       <Card>
         <h2>Password</h2>
         <PasswordForm />
+      </Card>
+      <Card>
+        <h2>Your data</h2>
+        <AccountData />
       </Card>
       <Card>
         <h2>Connected devices</h2>

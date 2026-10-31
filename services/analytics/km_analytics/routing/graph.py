@@ -123,10 +123,12 @@ class Graph:
                 best, best_d = n, d
         return (best, best_d) if best_d <= max_m else (None, best_d)
 
-    def dijkstra(self, source: int, cost, max_cost: float = math.inf, blocked=None) -> tuple[dict[int, float], dict[int, int], dict[int, float]]:
+    def dijkstra(self, source: int, cost, max_cost: float = math.inf, blocked=None, target: int | None = None) -> tuple[dict[int, float], dict[int, int], dict[int, float]]:
         """Single-source search. ``cost(edge, from_node, prev_edge)`` -> float or None (forbidden).
 
-        Returns (cost to node, predecessor edge, path length to node).
+        Returns (cost to node, predecessor edge, path length to node). With ``target``
+        the search stops once the target is settled: its distance and predecessor
+        chain are final at that point, so the path is identical to a full search.
         """
         dist = {source: 0.0}
         length = {source: 0.0}
@@ -136,6 +138,8 @@ class Graph:
             d, n = heapq.heappop(heap)
             if d > dist.get(n, math.inf) or d > max_cost:
                 continue
+            if n == target:
+                break
             for ei in self.adj.get(n, ()):
                 e = self.edges[ei]
                 m = e.other(n)

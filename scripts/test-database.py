@@ -52,7 +52,8 @@ grant select,insert,delete on storage.objects to authenticated;
             sql(migration)
         if args.without_postgis:
             print('EXPLICIT LIMIT: PostGIS installation, geometry types, GiST indexes and spatial functions excluded.',flush=True)
-        grants="grant usage on schema public,extensions to service_role; grant all on all tables in schema public to service_role;"
+        # Mirrors Supabase defaults: API roles may use extension functions (PostGIS).
+        grants="grant usage on schema extensions to anon,authenticated,service_role; grant all on all tables in schema public to service_role;"
         sql(grants)
         for test in sorted((root/'supabase/tests').glob('*.sql')):
             sql(test.read_text())

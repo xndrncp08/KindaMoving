@@ -1,6 +1,7 @@
 import 'server-only';
 import { z } from 'zod';
 import { analytics } from '../server/analytics';
+import { weatherAt } from '../server/weather';
 import { PermanentError, TransientError } from '../server/errors';
 import type { JobContext } from './runner';
 
@@ -54,7 +55,9 @@ export async function importUpload({ db, job, heartbeat }: JobContext) {
     });
     if (saved.error)
       throw new TransientError('Import could not be saved.', 'db');
-    return { ...(saved.data as object), warnings: result.warnings };
+    const outcome = saved.data as { activity_id: string; outcome: string };
+    await attachWeather(db, job.user_id, outcome, result);
+    return { ...outcome, warnings: result.warnings };
   } catch (e) {
     if (e instanceof PermanentError)
       await db.rpc('mark_upload', {
@@ -65,4 +68,24 @@ export async function importUpload({ db, job, heartbeat }: JobContext) {
       });
     throw e;
   }
+}
+
+/** Environmental context for newly created/merged activities; never fails the import. */
+export async function attachWeather(
+  db: JobContext['db'],
+  userId: string,
+  outcome: { activity_id: string; outcome: string },
+  result: Record<string, unknown>,
+) {
+  if (!['created', 'merged'].includes(outcome.outcome)) return;
+  const first = (result.track as { coordinates?: [number, number][] } | null)
+    ?.coordinates?.[0];
+  if (!first || typeof result.start_time !== 'string') return;
+  const weather = await weatherAt(first[1], first[0], result.start_time);
+  if (weather)
+    await db
+      .from('activities')
+      .update({ weather })
+      .eq('id', outcome.activity_id)
+      .eq('user_id', userId);
 }

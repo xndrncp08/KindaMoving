@@ -9,3 +9,8 @@ test-results/
 .DS_Store
 supabase/.temp/
 output/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.hypothesis/

@@ -22,7 +22,7 @@ SQL assertions cover the complete ownership table set, profile/preference transa
 
 ## Recorded local result, October 31, 2026
 
-Final command results are recorded in `CLAUDE_HANDOFF.md`. The relational-only harness is the local database evidence because Docker and PostGIS are unavailable. Full PostGIS integration is configured in GitHub Actions and must be assessed independently. No deployed environment or real OAuth flow was tested locally.
+Final command results are recorded in `CLAUDE_HANDOFF.md`. The relational-only harness is the local database evidence because Docker and PostGIS are unavailable. The full PostGIS migration/ownership harness also passed in the database job of [GitHub Actions run 41183871914](https://github.com/xndrncp08/KindaMoving/actions/runs/41183871914). No deployed environment or real OAuth flow was tested locally.
 
 ## CI
 

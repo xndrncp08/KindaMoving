@@ -41,7 +41,9 @@ Implemented: domain CRUD, single-record reads, profile transaction, saved routes
 - Production dependency audit: zero known findings at initial verification. Full dev audit: 16 moderate ESLint/minimatch findings, upstream/tooling remediation pending.
 - Landing screenshots inspected at desktop and mobile sizes; clipped badge/mobile metric layout corrected.
 
-No live Supabase Auth/Storage/OAuth, PostGIS geometry, actual phone hardware, production deployment, map tile interaction with real GPS geometry, or hosted database migration is claimed verified locally. CI is configured for the full PostGIS harness; review its run separately.
+No live Supabase Auth/Storage/OAuth, PostGIS geometry, actual phone hardware, production deployment, map tile interaction with real GPS geometry, or hosted database migration is claimed verified locally. The full PostgreSQL/PostGIS migration and ownership harness passed in GitHub Actions [run 41183871914](https://github.com/xndrncp08/KindaMoving/actions/runs/41183871914), database job. This verifies extension/type/index installation, not advanced geospatial behavior.
+
+The complete web and database CI jobs passed on the verified feature commit in [run 41183871914](https://github.com/xndrncp08/KindaMoving/actions/runs/41183871914). The following documentation-only evidence commit preserves that tested implementation.
 
 ## Known limits and launch requirements
 

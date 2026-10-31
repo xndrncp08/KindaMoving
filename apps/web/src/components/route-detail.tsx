@@ -9,7 +9,8 @@ import {
 } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button, Card, Dialog, ErrorState, Skeleton } from '@km/ui';
-import { api, keys } from '@/lib/queries';
+import { api, keys, routeConditionsQuery } from '@/lib/queries';
+import { AssessmentCard } from './conditions-view';
 import { lineSlice } from '@/lib/geo';
 import { useRouteEditor } from '@/lib/stores';
 import { useUnsaved } from './unsaved';
@@ -104,6 +105,10 @@ export function RouteDetail({
       });
       toast.success('Route updated.');
     },
+  });
+  const conditions = useQuery({
+    ...routeConditionsQuery(userId, route.id),
+    enabled: !!route.path && !editing,
   });
   const coros = useMutation({
     mutationFn: () =>
@@ -296,6 +301,32 @@ export function RouteDetail({
               </li>
             </ol>
           </details>
+        </Card>
+      )}
+      {conditions.data && conditions.data.status !== 'no_geometry' && (
+        <Card>
+          <h2>Conditions on this route</h2>
+          <p
+            className={
+              conditions.data.status === 'caution' ? 'notice' : 'muted'
+            }
+          >
+            {conditions.data.status === 'caution'
+              ? 'Caution: a likely hazard is reported on this route.'
+              : conditions.data.status === 'check'
+                ? 'Some reports along this route may still apply.'
+                : 'No current reports within 40 m of this route.'}{' '}
+            {conditions.data.note} Checked{' '}
+            {new Date(conditions.data.checked_at).toLocaleTimeString()}.
+          </p>
+          {conditions.data.assessments.map((a) => (
+            <AssessmentCard
+              key={a.report_ids.join()}
+              a={a}
+              userId={userId}
+              compact
+            />
+          ))}
         </Card>
       )}
       <Dialog

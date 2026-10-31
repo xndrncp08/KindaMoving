@@ -162,3 +162,35 @@ export function overviewQuery(userId: string) {
       api<import('./analytics').Overview>('analytics/overview?today=' + today),
   });
 }
+export type { Assessment } from './conditions';
+/** Rounded to ~1 km so panning slightly reuses the cached overlay. */
+export function conditionsQuery(
+  userId: string,
+  lat: number,
+  lon: number,
+  radius = 4000,
+) {
+  const la = Math.round(lat * 100) / 100;
+  const lo = Math.round(lon * 100) / 100;
+  return queryOptions({
+    queryKey: [...keys.resource(userId, 'conditions'), 'near', la, lo, radius],
+    queryFn: () =>
+      api<{ assessments: import('./conditions').Assessment[]; note: string }>(
+        `conditions?lat=${la}&lon=${lo}&radius=${radius}`,
+      ),
+    refetchInterval: 120000, // conditions are time-sensitive; refresh while visible
+  });
+}
+export function routeConditionsQuery(userId: string, routeId: string) {
+  return queryOptions({
+    queryKey: [...keys.resource(userId, 'conditions'), 'route', routeId],
+    queryFn: () =>
+      api<{
+        status: 'caution' | 'check' | 'no_current_reports' | 'no_geometry';
+        assessments: import('./conditions').Assessment[];
+        note: string;
+        checked_at: string;
+      }>(`routes/${routeId}/conditions`),
+    refetchInterval: 120000,
+  });
+}

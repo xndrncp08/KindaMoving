@@ -1,19 +1,13 @@
 import { NextResponse } from 'next/server';
 import { runJobs } from '@/lib/jobs/runner';
+import { cronAuthorized } from '@/lib/server/cron';
 export const maxDuration = 60;
 /**
  * Durable queue drain for a scheduler (e.g. Vercel Cron every minute) using
- * `Authorization: Bearer $CRON_SECRET`. Constant-time comparison.
+ * `Authorization: Bearer $CRON_SECRET` (constant-time check in lib/server/cron).
  */
 export async function GET(request: Request) {
-  const secret = process.env.CRON_SECRET;
-  const given = request.headers.get('authorization') ?? '';
-  const expected = 'Bearer ' + (secret ?? '');
-  const a = new TextEncoder().encode(given);
-  const b = new TextEncoder().encode(expected);
-  let diff = a.length ^ b.length;
-  for (let i = 0; i < Math.min(a.length, b.length); i++) diff |= a[i] ^ b[i];
-  if (!secret || secret.length < 32 || diff !== 0)
+  if (!cronAuthorized(request))
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 });
   try {
     return NextResponse.json({

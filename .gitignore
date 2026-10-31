@@ -14,3 +14,4 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .hypothesis/
+apps/web/public/maplibre-gl-worker.mjs

@@ -2,7 +2,7 @@ import { it, expect, vi, beforeEach } from 'vitest';
 vi.mock('@/lib/supabase/server', () => ({ supabase: vi.fn() }));
 vi.mock('@/lib/env', () => ({ configured: () => true }));
 import { supabase } from '@/lib/supabase/server';
-import { context } from '@/lib/api';
+import { context, sameOrigin } from '@/lib/api';
 import { POST, GET, PATCH, DELETE } from '@/app/api/[resource]/route';
 const user = { id: 'a0000000-0000-4000-8000-000000000001' };
 const getUser = vi.fn();
@@ -80,4 +80,17 @@ it('does not expose arbitrary tables', async () => {
       })
     ).status,
   ).toBe(404);
+});
+
+it('accepts same-origin writes when the host differs from the normalised URL', () => {
+  const r = (origin: string, host: string) =>
+    new Request('http://localhost:3000/api/activities', {
+      method: 'POST',
+      headers: { origin, host },
+    });
+  expect(sameOrigin(r('http://127.0.0.1:3000', '127.0.0.1:3000'))).toBe(true);
+  expect(sameOrigin(r('https://evil.test', '127.0.0.1:3000'))).toBe(false);
+  expect(
+    sameOrigin(new Request('http://localhost/api', { method: 'POST' })),
+  ).toBe(false); // no Origin
 });

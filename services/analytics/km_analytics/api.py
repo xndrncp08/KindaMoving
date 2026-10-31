@@ -15,6 +15,7 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
+from .analyze import explain
 from .model import ActivityFileError
 from .pipeline import analyze_file
 
@@ -60,3 +61,16 @@ async def parse_activity(request: Request, format: str, tz: str | None = None) -
     if not data:
         raise HTTPException(400, "Empty file.")
     return await run_in_threadpool(analyze_file, data, format, tz)
+
+
+@app.post("/v1/analyze/explain", dependencies=[Depends(require_service_token)])
+async def explain_run(request: Request) -> dict:
+    """{target, candidates[], history[]} summaries (no streams) -> evidence-backed observations."""
+    body = await request.json()
+    if not isinstance(body, dict) or not isinstance(body.get("target"), dict):
+        raise HTTPException(400, "target is required")
+    candidates = body.get("candidates") or []
+    history = body.get("history") or []
+    if not isinstance(candidates, list) or not isinstance(history, list) or len(candidates) > 500 or len(history) > 2000:
+        raise HTTPException(400, "candidates/history must be bounded lists")
+    return await run_in_threadpool(explain, body["target"], candidates, history)

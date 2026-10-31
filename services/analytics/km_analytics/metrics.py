@@ -222,6 +222,21 @@ def lap_summaries(track: Track, laps) -> list[dict]:
     return out
 
 
+def hr_histogram(track: Track, band: int = 5) -> dict[str, float]:
+    """Moving seconds per ``band``-bpm heart-rate band (keys are band floors).
+
+    Stored with the activity so training load can be recomputed later from the
+    athlete's current max HR without re-reading streams.
+    """
+    out: dict[str, float] = {}
+    for i in range(1, len(track.t)):
+        h = track.hr[i]
+        if h and track.moving[i]:
+            key = str(int(h // band) * band)
+            out[key] = round(out.get(key, 0.0) + track.t[i] - track.t[i - 1], 1)
+    return out
+
+
 def summarize(track: Track, laps=()) -> dict:
     mov = moving_time_series(track)
     km = splits(track)
@@ -249,6 +264,7 @@ def summarize(track: Track, laps=()) -> dict:
         "decoupling": decoupling(track),
         "best_efforts": best_efforts(track),
         "classification": classify(track, km, lap_rows),
+        "hr_histogram": hr_histogram(track),
         "splits": km,
         "laps": lap_rows,
     }

@@ -15,6 +15,7 @@ interface Preview {
   peak_m: number;
   start_m: number;
   volume_basis: string;
+  warnings: string[];
   paces: { basis: string };
 }
 export function PlanBuilder({ userId }: { userId: string }) {
@@ -139,6 +140,11 @@ export function PlanBuilder({ userId }: { userId: string }) {
             never more than 10% per week, with a lighter week every fourth week.
             Paces from {p.paces.basis}.
           </p>
+          {p.warnings.map((w) => (
+            <p key={w} className="notice">
+              {w}
+            </p>
+          ))}
           <DataTable headers={['Week', 'Phase', 'Volume', 'Sessions']}>
             {p.weeks.map((w) => (
               <tr key={w.week}>

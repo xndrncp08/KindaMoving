@@ -1,0 +1,3 @@
+-- Development only. Sign up a local user first, then replace the UUID below.
+-- Explicitly labelled fixtures are never inserted into a hosted project automatically.
+-- See docs/DATABASE.md for the opt-in seed command.

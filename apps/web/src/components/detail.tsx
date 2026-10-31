@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { Activity, Resource } from '@km/types';
 import { ActivityAnalysis } from './activity-analysis';
 import { RouteDetail } from './route-detail';
+import { WorkoutPanel } from './workout-panel';
 import { Card, ErrorState, Skeleton, EmptyState } from '@km/ui';
 import {
   recordsQuery,
@@ -65,6 +66,14 @@ export function Detail({
         <RouteDetail
           route={
             record as unknown as Parameters<typeof RouteDetail>[0]['route']
+          }
+          userId={userId}
+        />
+      )}
+      {name === 'workouts' && (
+        <WorkoutPanel
+          workout={
+            record as unknown as Parameters<typeof WorkoutPanel>[0]['workout']
           }
           userId={userId}
         />

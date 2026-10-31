@@ -12,6 +12,7 @@ import tempfile
 
 parser=argparse.ArgumentParser()
 parser.add_argument('--without-postgis',action='store_true')
+parser.add_argument('--then',help='Command to run against the migrated database (KM_TEST_DATABASE_URL) before teardown')
 args=parser.parse_args()
 root=Path(__file__).resolve().parents[1]
 pgbin=os.environ.get('PG_BIN','/opt/homebrew/opt/postgresql@17/bin')
@@ -20,7 +21,7 @@ def binary(name):
     return str(explicit) if explicit.exists() else shutil.which(name)
 with tempfile.TemporaryDirectory(prefix='km-pg-') as tmp:
     data=Path(tmp)/'data'
-    subprocess.run([binary('initdb'),'-D',str(data),'-A','trust','--no-locale'],check=True,stdout=subprocess.DEVNULL)
+    subprocess.run([binary('initdb'),'-D',str(data),'-A','trust','--no-locale','-E','UTF8'],check=True,stdout=subprocess.DEVNULL)
     subprocess.run([binary('pg_ctl'),'-D',str(data),'-l',str(Path(tmp)/'log'),'-o',f'-k {tmp} -p 55439 -h ""','-w','start'],check=True,stdout=subprocess.DEVNULL)
     def sql(content):
         subprocess.run([binary('psql'),'-h',tmp,'-p','55439','-d','postgres','-v','ON_ERROR_STOP=1','-q'],input=content,text=True,check=True)
@@ -59,5 +60,8 @@ grant select,insert,delete on storage.objects to authenticated;
             sql(test.read_text())
             print(f'passed {test.name}',flush=True)
         print('Database contract checks passed (disposable cluster).')
+        if args.then:
+            env={**os.environ,'KM_TEST_DATABASE_URL':f'postgresql:///postgres?host={tmp}&port=55439'}
+            subprocess.run(args.then,shell=True,check=True,env=env)
     finally:
         subprocess.run([binary('pg_ctl'),'-D',str(data),'-m','immediate','-w','stop'],check=True,stdout=subprocess.DEVNULL)

@@ -109,15 +109,22 @@ export function ResourcePage({
           <h1 className="page-title">{title}</h1>
           <p className="muted">{subtitle}</p>
         </div>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            open('record');
-          }}
-        >
-          <Plus size={16} />
-          Add {singular}
-        </Button>
+        <div className="row">
+          {name === 'routes' && (
+            <Button asChild variant="outline">
+              <Link href="/app/routes/plan">Plan a route</Link>
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              setEditing(null);
+              open('record');
+            }}
+          >
+            <Plus size={16} />
+            Add {singular}
+          </Button>
+        </div>
       </header>
       <div className="row">
         <label style={{ flex: 1 }}>

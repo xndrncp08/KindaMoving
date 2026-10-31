@@ -17,7 +17,18 @@ const defaults = {
     shoe_id: null,
   },
   routes: { title: '', description: '', distance_m: 0 },
-  shoes: { title: '', brand: '', initial_distance_m: 0, retired: false },
+  shoes: {
+    title: '',
+    brand: '',
+    initial_distance_m: 0,
+    retired: false,
+    purchase_price: null,
+    currency: 'CAD',
+    purchased_on: null,
+    retired_on: null,
+    target_distance_m: 700000,
+    is_default: false,
+  },
   workouts: {
     title: '',
     description: '',
@@ -153,8 +164,43 @@ export function RecordForm({
             />
           </label>
           <label>
+            Price paid
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              {...register('purchase_price')}
+            />
+          </label>
+          <label>
+            Currency
+            <Input maxLength={3} {...register('currency')} />
+          </label>
+          <label>
+            Bought on
+            <Input type="date" {...register('purchased_on')} />
+          </label>
+          <label>
+            Expected lifespan (metres)
+            <Input
+              type="number"
+              min="100000"
+              max="3000000"
+              step="1000"
+              {...register('target_distance_m')}
+            />
+          </label>
+          <label>
+            <input type="checkbox" {...register('is_default')} />
+            Default for imported runs
+          </label>
+          <label>
             <input type="checkbox" {...register('retired')} />
             Retired
+          </label>
+          <label>
+            Retired on
+            <Input type="date" {...register('retired_on')} />
           </label>
         </>
       )}

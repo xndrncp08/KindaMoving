@@ -14,11 +14,30 @@ export const routeSchema = z.object({
   description: z.string().trim().max(2000).default(''),
   distance_m: z.coerce.number().nonnegative().max(500000).default(0),
 });
+const optionalNumber = (max: number) =>
+  z.preprocess(
+    (v) =>
+      v === '' || v === null || v === undefined || Number.isNaN(v) ? null : v,
+    z.coerce.number().nonnegative().max(max).nullable(),
+  );
+const optionalDate = z.preprocess(
+  (v) => (v === '' || v === undefined ? null : v),
+  date.nullable(),
+);
 export const shoeSchema = z.object({
   title,
   brand: z.string().trim().max(80),
   initial_distance_m: z.coerce.number().nonnegative().max(10000000).default(0),
   retired: z.boolean().default(false),
+  purchase_price: optionalNumber(10000).default(null),
+  currency: z
+    .string()
+    .regex(/^[A-Z]{3}$/)
+    .default('CAD'),
+  purchased_on: optionalDate.default(null),
+  retired_on: optionalDate.default(null),
+  target_distance_m: z.coerce.number().min(100000).max(3000000).default(700000),
+  is_default: z.boolean().default(false),
 });
 export const workoutSchema = z.object({
   title,

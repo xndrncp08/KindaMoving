@@ -17,7 +17,8 @@ export async function POST(request: Request) {
     const { region } = z
       .object({ region: z.enum(['auto', 'us', 'eu', 'cn']).default('auto') })
       .parse(await request.json().catch(() => ({})));
-    const origin = new URL(request.url).origin;
+    // Validated by context(): the origin the browser is actually on (request.url may be normalised).
+    const origin = request.headers.get('origin') ?? new URL(request.url).origin;
     try {
       const { url, cookie } = await begin(admin(), user.id, region, origin);
       const response = NextResponse.json({ url });

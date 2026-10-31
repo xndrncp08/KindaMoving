@@ -8,7 +8,7 @@ from .fixtures import ORIGIN
 proj = LocalProjection(*ORIGIN)
 
 
-def streams(path_xy, speed, noise=0.0, seed=1, start_offset=0.0):
+def streams(path_xy, speed, noise=0.0, seed=1, start_offset=0.0, dist_scale=1.0):
     """Sample a polyline (metres) at 1 Hz for a runner at constant speed."""
     import random
 
@@ -28,7 +28,7 @@ def streams(path_xy, speed, noise=0.0, seed=1, start_offset=0.0):
         t.append(len(t) + start_offset)
         lat.append(la)
         lon.append(lo)
-        dist.append(s)  # processed distance, as the pipeline would provide
+        dist.append(s * dist_scale)  # processed distance; device distance can run long (dist_scale)
         s += speed
     return {"t": t, "lat": lat, "lon": lon, "dist": dist}
 
@@ -86,3 +86,16 @@ def test_frames_are_on_the_reference_line_and_deterministic():
     assert a == align({"streams": ref}, {"streams": ghost})
     assert a["frames"][0]["t"] == 0 and a["frames"][1]["t"] == 5
     assert a["notes"][0].startswith("Simulated replay")
+
+
+def test_recovers_after_a_different_turnaround():
+    # Live-verification case: same out-and-back, but the ghost turned 150 m earlier.
+    # Device distance running 7% long (as in the live files) pushed the return-leg match past the window.
+    ref = streams([(0, 0), (3150, 0), (0, 0)], 3.15, noise=2, seed=5, dist_scale=1.07)
+    ghost = streams([(0, 0), (3000, 0), (0, 0)], 3.0, noise=2, seed=6, dist_scale=1.07)
+    out = align({"streams": ref}, {"streams": ghost})
+    assert out["status"] == "ok"
+    assert out["comparability"]["matched_fraction"] > 0.9, out["comparability"]
+    assert out["aligned_distance_m"] > 5500  # the shared return leg is aligned again
+    assert len(out["skipped"]) == 1 and out["skipped"][0]["length_m"] == pytest.approx(300 * 1.07, abs=40)
+    assert "skipped" in out["notes"][1]

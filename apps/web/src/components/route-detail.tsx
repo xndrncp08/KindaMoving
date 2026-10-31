@@ -14,6 +14,8 @@ import { AssessmentCard } from './conditions-view';
 import { lineSlice } from '@/lib/geo';
 import { useRouteEditor } from '@/lib/stores';
 import { useUnsaved } from './unsaved';
+import { useDraft } from './use-draft';
+import { cacheRecord } from '@/lib/offline/drafts';
 import type { MapPoint } from './planner-map';
 const PlannerMap = dynamic(() => import('./planner-map'), {
   ssr: false,
@@ -62,6 +64,17 @@ export function RouteDetail({
   const [confirmCoros, setConfirmCoros] = useState(false);
   const editor = useRouteEditor();
   useUnsaved(editing && editor.dirty);
+  const draft = useDraft(
+    userId,
+    `route:${route.id}`,
+    route.updated_at ?? null,
+    editor.waypoints,
+    editing && editor.dirty,
+  );
+  // Keep an offline copy of every route the athlete opens (their own data only).
+  useEffect(() => {
+    if (route.path) void cacheRecord(userId, `route:${route.id}`, route);
+  }, [userId, route]);
   // Snap results are keyed by the waypoint list: a slow response for an older list can
   // never overwrite a newer one, and superseded requests are aborted via the signal.
   const snap = useQuery({
@@ -98,6 +111,7 @@ export function RouteDetail({
         }),
       }),
     onSuccess: () => {
+      draft.clear();
       editor.setDirty(false);
       setEditing(false);
       void client.invalidateQueries({
@@ -246,6 +260,7 @@ export function RouteDetail({
               variant="ghost"
               onClick={() => {
                 if (!editor.dirty || confirm('Discard your changes?')) {
+                  draft.clear();
                   editor.setDirty(false);
                   setEditing(false);
                 }

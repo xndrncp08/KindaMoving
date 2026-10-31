@@ -3,34 +3,52 @@
 ## Layout
 
 ```
-apps/web/src/app       Next.js pages, layouts and route handlers
-apps/web/src/components Product UI and domain forms
-apps/web/src/lib       Auth, queries, interaction stores, metrics, ingestion
-packages/ui           shadcn-style owned primitives built on Radix/CVA
-packages/types        Zod input schemas, domain interfaces, future service contracts
-packages/config       Shared strict TypeScript configuration
-services/analytics    Reserved, no fake Python service
-supabase/migrations   Ordered SQL source of truth
-supabase/tests        Ownership and relational integration assertions
-docs                  Engineering decisions and handoff
+apps/web/src/app          Next.js pages, layouts and route handlers (the only user-facing runtime)
+apps/web/src/components   Product UI: planner, analysis, conditions, training, ghost, gear, form
+apps/web/src/lib          Queries, stores, sync, offline (IndexedDB), training, conditions, COROS, jobs
+apps/web/src/lib/server   Server-only: analytics client, crypto, weather, conditions, official data, cron auth
+services/analytics        Python 3.12 FastAPI: processing, analytics, routing, ghost, form
+packages/ui | types | config  Primitives, shared Zod schemas/types, TS config
+supabase/migrations       Ordered SQL source of truth (10 files)
+supabase/tests            SQL contract suites run on disposable PG17 + PostGIS
+docs                      Engineering docs (index in README)
 ```
 
-npm workspaces provide local package linking and one lockfile without a task-runner dependency. The web application is the only runtime. Shared packages export TypeScript source; Next transpiles them. Keep domain UI in the app until a second consumer justifies moving it.
+## System view
 
-## Request path
+```
+                    ┌──────────────────────────── Browser ─────────────────────────────┐
+                    │ TanStack Query (server state, ['user', id, …])  Zustand (UI)     │
+                    │ RHF + Zod (forms)   URL params (navigable)   IndexedDB (offline) │
+                    │ JobSync / OfflineSync state machines        service worker       │
+                    └──────────────┬───────────────────────────────────────┬───────────┘
+                    session cookie │ same-origin                           │ direct upload (storage RLS)
+┌──────────────────────────────────▼────────────────────────┐    ┌─────────▼──────────┐
+│ Next.js route handlers: context() → user-scoped client    │    │ Supabase Storage   │
+│  • CRUD, analytics, routes, conditions, training, gear    │    │ activity-files     │
+│  • enqueue_job → after(kickJobs) / cron /api/jobs/run     │    │ form-videos/results│
+│  • runJobs (service role): import, COROS sync/push, form  │    └────────────────────┘
+└────────┬───────────────────────────┬──────────────────────┘
+         │ RLS / definer RPCs        │ Bearer ANALYTICS_SERVICE_TOKEN
+┌────────▼─────────────────┐  ┌──────▼──────────────────────────────────┐   ┌──────────────┐
+│ Postgres 17 + PostGIS     │◀─┤ km-analytics (FastAPI)                  │   │ COROS MCP    │
+│ RLS on every table        │  │  parse/clean/metrics  explain  ghost     │   │ OAuth 2.1    │
+│ job queue state machine   │  │  routing (graph cache)  form (MediaPipe) │   │ PKCE, tools  │
+│ network (km_network_reader│  └──────────────────────────────────────────┘   └──────▲───────┘
+│ select-only)              │                                                        │
+└───────────────────────────┘          server-only, sealed tokens ──────────────────┘
+External data: OpenStreetMap (ODbL), Open-Meteo (CC BY 4.0), City of Calgary Open Data.
+```
 
-A protected server layout verifies the Supabase user and checks for a profile. Each route handler separately verifies the current user; authorization never depends on a layout. The request-scoped Supabase client uses the caller's cookies and publishable key. PostgreSQL RLS is the final ownership boundary, including requests made directly to the Data API.
+## Principles kept from Phase 1
 
-React Query owns remote data; mutation success invalidates related user queries. Zustand owns transient interaction state only. React Hook Form and Zod own editable form values. Search/status/week filters live in the URL.
+The caller's publishable-key client plus RLS is the default path. Identity is checked in every handler, not in layouts. Server responses live only in Query. Measurements are stored in metres and seconds, and display conversion happens at the edge.
 
-## Rendering and delivery
+## Phase 2 additions
 
-Marketing is prerendered. Application shells are server rendered and personalized records load through Query. Maps and charts are dynamic imports; MapLibre is absent from the marketing and dashboard execution paths. Route maps do not invent geometry for manual route metadata. No external image dependency or tracking script is installed; route illustrations and brand assets are original SVG. UI uses system sans-serif plus a serif accent, avoiding font downloads.
+- **Service role, narrowly**: job runner, COROS token vault, account deletion and cron imports. Each scopes queries by an owner ID verified upstream. Clients cannot reach worker RPCs (`claim_jobs`, `import_activity`, `vault_*`, `upsert_official_condition`).
+- **Durable jobs**: `sync_jobs` with a trigger-enforced state machine, leases, backoff and idempotency keys. Kicked after the response with `after()`, drained by cron; the client polls only while jobs are active and turns completions into targeted cache invalidation (`lib/sync.ts`).
+- **Python service**: stateless compute plus read-only network access. It never sees user credentials.
+- **Cross-module synchronisation**: a job's success invalidates the modules it affects (`jobEffects`). Conditions reports or votes invalidate the shared `conditions` prefix, so overlays and route suitability refresh. Workout changes invalidate training and workouts. Gear writes invalidate gear, summary and activities. Stale and out-of-order responses are neutralised by key-scoped queries, aborted superseded requests (route snapping) and `updated_at`-guarded transition detection.
 
-## Design system
-
-Warm off-white/deep forest surfaces, citron accent, compact uppercase instrument labels, generous headline scale, quiet cards. `globals.css` contains tokens for both themes and responsive layouts. Radix supplies dialog focus management, drawers use the same behavior, and reduced-motion disables transitions. Reusable buttons, inputs, cards, tables, dialogs/drawers, tabs, metrics, skeletons, empty/error states, chart/map wrappers and domain cards live in `@km/ui`. Sonner supplies notifications. The SVG KM monogram also supplies favicon/app imagery.
-
-## Deliberate limits
-
-Resource lists show at most 500 records; this is disclosed when reached. Database summary totals include all activities. Detail endpoints retrieve any owned ID regardless of the list limit. Add cursor pagination before high-volume ingestion. Shoe history is a list of currently assigned runs, not an immutable assignment audit log. No dependency injection framework, queue, workers or placeholder AI service is introduced.
+Module docs: [ACTIVITY_PROCESSING](ACTIVITY_PROCESSING.md), [RUNNING_METRICS](RUNNING_METRICS.md), [ANALYTICS](ANALYTICS.md), [COROS_INTEGRATION](COROS_INTEGRATION.md), [ROUTING](ROUTING.md), [CONDITIONS](CONDITIONS.md), [TRAINING](TRAINING.md), [GHOST](GHOST.md), [GEAR](GEAR.md), [FORM](FORM.md), [STATE_MANAGEMENT](STATE_MANAGEMENT.md), [SECURITY](SECURITY.md), [PERFORMANCE](PERFORMANCE.md), [DEPLOYMENT](DEPLOYMENT.md).

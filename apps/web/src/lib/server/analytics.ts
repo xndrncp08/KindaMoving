@@ -44,3 +44,24 @@ export async function analytics<T>(
     'analytics_' + response.status,
   );
 }
+/** Route-handler helper: analytics failures become user-facing API errors. */
+export async function analyticsApi<T>(
+  path: string,
+  body: unknown,
+  timeoutMs = 30000,
+): Promise<T> {
+  const { ApiError } = await import('../api');
+  try {
+    return await analytics<T>(path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      timeoutMs,
+    });
+  } catch (e) {
+    if (e instanceof TransientError)
+      throw new ApiError(503, 'Route service is temporarily unavailable.');
+    if (e instanceof PermanentError) throw new ApiError(422, e.message);
+    throw e;
+  }
+}

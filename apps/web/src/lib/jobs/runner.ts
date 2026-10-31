@@ -30,6 +30,7 @@ const LEASE_S = 120;
 const registry: Record<string, () => Promise<Handler>> = {
   activity_import: async () => (await import('./activity-import')).importUpload,
   coros_sync: async () => (await import('./coros-sync')).corosSync,
+  coros_route_push: async () => (await import('./coros-push')).pushRoute,
 };
 
 /**

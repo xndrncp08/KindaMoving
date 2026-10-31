@@ -1,5 +1,7 @@
 import 'server-only';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { hazardWeight } from '../conditions';
+import { conditionsNear } from './conditions';
 /** Hazards (scored condition reports) near a point, passed to the router as cost penalties. */
 export interface RouteHazard {
   lat: number;
@@ -15,9 +17,20 @@ export async function hazardsNear(
   lon: number,
   radiusM: number,
 ): Promise<RouteHazard[]> {
-  void db;
-  void lat;
-  void lon;
-  void radiusM;
-  return []; // replaced by the conditions confidence model (feat/route-conditions)
+  try {
+    const assessments = await conditionsNear(db, lat, lon, radiusM);
+    return assessments
+      .map((a) => ({
+        lat: a.lat,
+        lon: a.lon,
+        radius_m: 40,
+        weight: hazardWeight(a),
+        kind: a.kind,
+        label: `${a.kind} (${a.status}, p=${a.probability})`,
+      }))
+      .filter((h) => h.weight > 0)
+      .slice(0, 300);
+  } catch {
+    return []; // routing still works; the UI states how many conditions were weighed
+  }
 }

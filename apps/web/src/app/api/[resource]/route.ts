@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { resourceSchemas, type Resource } from '@km/types';
-import { ApiError, context, failure, check } from '@/lib/api';
+import { ApiError, columns, context, failure, check } from '@/lib/api';
 import { z } from 'zod';
 function resource(value: string): Resource {
   if (!Object.hasOwn(resourceSchemas, value))
@@ -17,9 +17,11 @@ export async function GET(
     // shortcut: lists stop at 500; add cursor pagination before high-volume ingestion.
     const { data, error } = await db
       .from(name)
-      .select('*')
+      .select(columns[name].list)
       .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+      .order(name === 'activities' ? 'started_at' : 'created_at', {
+        ascending: false,
+      })
       .limit(500);
     check(error);
     return NextResponse.json(data, {
@@ -45,7 +47,7 @@ export async function POST(
     const { data, error } = await db
       .from(name)
       .insert({ ...parsed.data, user_id: user.id })
-      .select()
+      .select(columns[name].detail)
       .single();
     check(error);
     return NextResponse.json(data, { status: 201 });
@@ -70,7 +72,7 @@ export async function PATCH(
       .update(parsed.data)
       .eq('id', id.data)
       .eq('user_id', user.id)
-      .select()
+      .select(columns[name].detail)
       .maybeSingle();
     check(error);
     if (!data) throw new ApiError(404, 'Record not found.');

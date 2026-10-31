@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { resourceSchemas } from '@km/types';
-import { context, failure, check, ApiError } from '@/lib/api';
+import { columns, context, failure, check, ApiError } from '@/lib/api';
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ resource: string; id: string }> },
@@ -16,7 +16,7 @@ export async function GET(
     const { db, user } = await context(request);
     const { data, error } = await db
       .from(resource)
-      .select('*')
+      .select(columns[resource].detail)
       .eq('id', id)
       .eq('user_id', user.id)
       .maybeSingle();

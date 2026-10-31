@@ -12,16 +12,16 @@ Audit of the Codex Phase 1 foundation (`main` @ `62d8eff`) before Phase 2 work. 
 
 ## Defects and gaps fixed in Phase 2
 
-| Finding | Impact | Resolution |
-| --- | --- | --- |
-| `activities.started_at` is a calendar `date`; no timestamp, timezone, source or external ID | Wearable/file imports cannot be deduplicated or ordered; cross-midnight runs ambiguous | `start_time timestamptz`, `utc_offset_s`, `source`, `source_ref`, unique `(user_id, source, source_ref)`; calendar date kept for manual entries |
-| `route_condition_reports` requires a route owned by the reporter | Community condition reports are impossible; a report on a private route would leak it if made public | New `condition_reports` with point geography, votes, moderation and a reporter-masking read function; old table kept as private route notes |
-| `sync_jobs` has only `pending/processing/complete/failed` | No leases, retries, backoff, idempotency or crash recovery | Job state machine enforced by trigger, leases with expiry, attempts/backoff, idempotency keys, transition history |
-| Uploaded GPX/FIT files stay `pending` forever | Upload feature is storage only | Job-driven import through the Python analytics service, transactional `import_activity` RPC |
-| `Permissions-Policy: geolocation=()` | "Start from my location" for route generation is blocked by the browser | `geolocation=(self)` |
-| Default map viewport is Edmonton | Pilot geography is Calgary | Calgary default |
-| No account export or deletion flow | Privacy requirement; storage objects orphaned on deletion | Export endpoint and server-side deletion that removes storage objects first |
-| Connected-account table has no place for tokens (correctly) | COROS needs server-only credentials | `private.provider_tokens` (not exposed through the Data API), AES-256-GCM encrypted by the server |
+| Finding                                                                                     | Impact                                                                                               | Resolution                                                                                                                                      |
+| ------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `activities.started_at` is a calendar `date`; no timestamp, timezone, source or external ID | Wearable/file imports cannot be deduplicated or ordered; cross-midnight runs ambiguous               | `start_time timestamptz`, `utc_offset_s`, `source`, `source_ref`, unique `(user_id, source, source_ref)`; calendar date kept for manual entries |
+| `route_condition_reports` requires a route owned by the reporter                            | Community condition reports are impossible; a report on a private route would leak it if made public | New `condition_reports` with point geography, votes, moderation and a reporter-masking read function; old table kept as private route notes     |
+| `sync_jobs` has only `pending/processing/complete/failed`                                   | No leases, retries, backoff, idempotency or crash recovery                                           | Job state machine enforced by trigger, leases with expiry, attempts/backoff, idempotency keys, transition history                               |
+| Uploaded GPX/FIT files stay `pending` forever                                               | Upload feature is storage only                                                                       | Job-driven import through the Python analytics service, transactional `import_activity` RPC                                                     |
+| `Permissions-Policy: geolocation=()`                                                        | "Start from my location" for route generation is blocked by the browser                              | `geolocation=(self)`                                                                                                                            |
+| Default map viewport is Edmonton                                                            | Pilot geography is Calgary                                                                           | Calgary default                                                                                                                                 |
+| No account export or deletion flow                                                          | Privacy requirement; storage objects orphaned on deletion                                            | Export endpoint and server-side deletion that removes storage objects first                                                                     |
+| Connected-account table has no place for tokens (correctly)                                 | COROS needs server-only credentials                                                                  | `private.provider_tokens` (not exposed through the Data API), AES-256-GCM encrypted by the server                                               |
 
 ## Observations left unchanged (documented limits)
 

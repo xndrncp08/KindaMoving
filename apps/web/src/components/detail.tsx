@@ -2,7 +2,8 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import type { Resource } from '@km/types';
+import type { Activity, Resource } from '@km/types';
+import { ActivityAnalysis } from './activity-analysis';
 import { Card, ErrorState, Skeleton, EmptyState } from '@km/ui';
 import {
   recordsQuery,
@@ -10,7 +11,7 @@ import {
   detailQuery,
   summaryQuery,
 } from '@/lib/queries';
-import { distance, duration, pace } from '@/lib/metrics';
+import { distance } from '@/lib/metrics';
 import { RecordForm } from './record-form';
 import { toast } from 'sonner';
 const RouteMap = dynamic(() => import('./route-map'), {
@@ -58,18 +59,11 @@ export function Detail({
       </Link>
       <h1 className="page-title">{String(r.title)}</h1>
       {name === 'activities' && (
-        <Card>
-          <p>
-            {distance(Number(r.distance_m), profile.data?.units)} ·{' '}
-            {duration(Number(r.elapsed_s))} ·{' '}
-            {duration(
-              (pace(Number(r.distance_m), Number(r.elapsed_s)) || 0) *
-                (profile.data?.units === 'imperial' ? 1.609344 : 1),
-            )}{' '}
-            /{profile.data?.units === 'imperial' ? 'mi' : 'km'}
-          </p>
-          <p className="muted">Manual activity · {String(r.started_at)}</p>
-        </Card>
+        <ActivityAnalysis
+          activity={record as Activity}
+          userId={userId}
+          units={profile.data?.units}
+        />
       )}
       {name === 'routes' && <RouteMap geometry={r.path} />}
       {name === 'shoes' && (

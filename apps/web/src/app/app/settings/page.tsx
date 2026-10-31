@@ -1,0 +1,32 @@
+import { requireUser } from '@/lib/session';
+import { ProfileForm } from '@/components/profile-form';
+import { PasswordForm } from '@/components/password-form';
+import { Card } from '@km/ui';
+export default async function Page() {
+  const { user } = await requireUser();
+  return (
+    <div className="stack">
+      <header className="page-head">
+        <p className="eyebrow">The details, sorted</p>
+        <h1 className="page-title">Your settings.</h1>
+        <p className="muted">Signed in as {user.email}</p>
+      </header>
+      <Card>
+        <h2>Profile & preferences</h2>
+        <ProfileForm userId={user.id} />
+      </Card>
+      <Card>
+        <h2>Password</h2>
+        <PasswordForm />
+      </Card>
+      <Card>
+        <h2>Connected devices</h2>
+        <p className="badge">COROS · Not available</p>
+        <p className="muted">
+          OAuth and synchronization are reserved for Phase 2. No device
+          connection is active in this release.
+        </p>
+      </Card>
+    </div>
+  );
+}

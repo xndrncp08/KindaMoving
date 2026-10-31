@@ -52,6 +52,9 @@ export function RecordForm({
     defaultValues: (record || defaults[name]) as Record<string, unknown>,
   });
   const mutation = useRecordMutation(userId, name);
+  // Imported activities keep file-derived measurements read-only (enforced in SQL too).
+  const imported =
+    name === 'activities' && !!record?.source && record.source !== 'manual';
   useUnsaved(isDirty);
   return (
     <form
@@ -76,13 +79,19 @@ export function RecordForm({
         Name
         <Input {...register('title')} />
       </label>
+      {imported && (
+        <p className="muted full">
+          Distance, time and date come from the recorded file and stay read-only
+          so splits, streams and shoe totals remain consistent.
+        </p>
+      )}
       {name === 'activities' && (
         <>
-          <label>
+          <label hidden={imported}>
             Date
             <Input type="date" {...register('started_at')} />
           </label>
-          <label>
+          <label hidden={imported}>
             Distance (metres)
             <Input
               type="number"
@@ -92,7 +101,7 @@ export function RecordForm({
               {...register('distance_m')}
             />
           </label>
-          <label>
+          <label hidden={imported}>
             Elapsed time (seconds)
             <Input
               type="number"

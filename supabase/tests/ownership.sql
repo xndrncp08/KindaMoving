@@ -7,7 +7,7 @@ insert into activities(id,user_id,title,started_at,distance_m,elapsed_s,shoe_id)
 insert into routes(id,user_id,title) values('a3000000-0000-4000-8000-000000000001',auth.uid(),'[DEV] River loop');
 insert into saved_routes(user_id,route_id) values(auth.uid(),'a3000000-0000-4000-8000-000000000001');
 insert into storage.objects(bucket_id,name) values('activity-files',auth.uid()::text||'/fixture.gpx');
-select public.register_upload('[DEV] fixture.gpx','gpx',20,auth.uid()::text||'/fixture.gpx');
+select public.register_upload('[DEV] fixture.gpx','gpx',20,auth.uid()::text||'/fixture.gpx',repeat('a',64));
 insert into workouts(user_id,title,scheduled_on) values(auth.uid(),'[DEV] Easy run','2026-11-01');
 do $$begin
  assert (public.running_summary('2026-10-26')->>'distance_m')::numeric=5000,'Summary must include all records';
@@ -21,14 +21,14 @@ update workouts set completed=true;
 update activities set elapsed_s=1600;
 select set_config('request.jwt.claim.sub','b0000000-0000-4000-8000-000000000002',false);
 do $$declare table_name text; n int; begin
- foreach table_name in array array['profiles','user_preferences','activities','activity_splits','routes','saved_routes','shoes','shoe_assignments','workouts','training_plans','route_condition_reports','connected_provider_accounts','sync_jobs','activity_uploads'] loop
+ foreach table_name in array array['profiles','user_preferences','activities','activity_splits','routes','saved_routes','shoes','shoe_assignments','workouts','training_plans','route_condition_reports','connected_provider_accounts','sync_jobs','activity_uploads','activity_streams','sync_job_events'] loop
  execute format('select count(*) from public.%I',table_name) into n; assert n=0,'Cross-user read leaked';
  end loop;
  begin insert into activities(user_id,title,started_at,distance_m,elapsed_s) values('a0000000-0000-4000-8000-000000000001','Forged','2026-10-31',100,50); raise exception 'Expected RLS'; exception when insufficient_privilege then null; end;
  begin insert into activities(user_id,title,started_at,distance_m,elapsed_s,shoe_id) values(auth.uid(),'Foreign shoe','2026-10-31',100,50,'a1000000-0000-4000-8000-000000000001'); raise exception 'Expected owner FK'; exception when foreign_key_violation then null; end;
  begin insert into saved_routes(user_id,route_id) values(auth.uid(),'a3000000-0000-4000-8000-000000000001'); raise exception 'Expected owner FK'; exception when foreign_key_violation then null; end;
  begin insert into connected_provider_accounts(user_id,provider,status) values(auth.uid(),'coros','connected'); raise exception 'Expected restricted state'; exception when insufficient_privilege then null; end;
- begin perform public.register_upload('fake.gpx','gpx',10,'a0000000-0000-4000-8000-000000000001/fake'); raise exception 'Expected upload check'; exception when raise_exception then assert sqlerrm='Invalid upload'; end;
+ begin perform public.register_upload('fake.gpx','gpx',10,'a0000000-0000-4000-8000-000000000001/fake',repeat('b',64)); raise exception 'Expected upload check'; exception when raise_exception then assert sqlerrm='Invalid upload'; end;
 end$$;
 update activities set title='hacked';
 delete from activities;

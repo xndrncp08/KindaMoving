@@ -7,7 +7,10 @@ Method (docs/GHOST.md):
    searching only a window [s - 30 m, s + 300 m] around its last matched arc
    length s. The forward-only window keeps progress monotonic, so loops and
    out-and-backs that revisit a place cannot make the ghost jump. Samples further
-   than 60 m from the route are unmatched (position held) and reported.
+   than 60 m from the route are unmatched (position held) and reported. An
+   unmatched sample triggers a recovery search up to 2 km ahead with a 30 m
+   tolerance, so a ghost that rejoins the route after a detour or an earlier
+   turnaround is re-acquired instead of held for the rest of the run.
 3. Both runners' time-at-arc-length curves are sampled every 25 m of the
    reference; gap(s) = t_ghost(s) - t_reference(s) (positive: the reference run
    was ahead at that point).
@@ -28,6 +31,7 @@ GRID_M = 25.0
 WINDOW_BACK_M = 30.0
 WINDOW_AHEAD_M = 300.0
 MATCH_M = 60.0
+RECOVERY_AHEAD_M = 2000.0
 FRAME_S = 5.0
 
 
@@ -130,12 +134,28 @@ def align(ref: dict, ghost: dict) -> dict:
 
     # Map-match the ghost onto the reference line with a forward-biased window.
     s_ref = list(line.cum)
-    s_ghost, unmatched, lateral, s = [], [], [], 0.0
+    s_ghost, unmatched, lateral, skipped, s = [], [], [], [], 0.0
+    last_match = 0
     for i, (lat, lon) in enumerate(pb):
+        before = s
         cand, d = line.locate(lat, lon, max(0.0, s - WINDOW_BACK_M), s + WINDOW_AHEAD_M)
+        if d > MATCH_M:
+            # Recovery: after a detour or an earlier turnaround the ghost rejoins the route
+            # further along than the normal window reaches. Search ahead (still monotonic)
+            # with a stricter tolerance so a parallel leg is not grabbed by mistake.
+            far, fd = line.locate(lat, lon, s, s + RECOVERY_AHEAD_M)
+            if fd <= MATCH_M / 2:
+                cand, d = far, fd
         if d <= MATCH_M:
             s = max(s, cand)  # never move backwards along the route
             lateral.append(d)
+            # Progress beyond what the ghost itself ran since its position last advanced means it
+            # cut part of the route (e.g. turned around early, then rejoined further along).
+            ran = db[i] - db[last_match]
+            if s - before - ran > 100.0:
+                skipped.append({"at_m": round(before, 1), "length_m": round(s - before - ran, 1)})
+            if s > before:
+                last_match = i
         else:
             unmatched.append(i)
         s_ghost.append(s)
@@ -183,5 +203,7 @@ def align(ref: dict, ghost: dict) -> dict:
         "frames": frames,
         "finish": {"ref_s": finish_ref, "ghost_s": finish_ghost, "gap_s": round(finish_ghost - finish_ref, 1) if finish_ref is not None and finish_ghost is not None else None},
         "off_route": off_spans,
-        "notes": ["Simulated replay of two recorded runs aligned by position on the reference route. Not live tracking."],
+        "skipped": skipped,
+        "notes": ["Simulated replay of two recorded runs aligned by position on the reference route. Not live tracking."]
+        + [f"The ghost skipped {k['length_m']:.0f} m of the route near {k['at_m'] / 1000:.2f} km, so gaps after that point compare unequal distances." for k in skipped],
     }

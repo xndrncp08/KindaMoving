@@ -63,6 +63,8 @@ const TAPER: Record<Race, number[]> = {
   marathon: [0.75, 0.6, 0.45],
 };
 const DAY = 86400000;
+const MIN_EASY_M = 3000;
+const MIN_LONG_M = 5000;
 const iso = (t: number) => new Date(t).toISOString().slice(0, 10);
 const parse = (d: string) => Date.parse(d + 'T00:00:00Z');
 const weekday = (d: string) => (new Date(parse(d)).getUTCDay() + 6) % 7; // Monday = 0
@@ -191,6 +193,7 @@ export function generatePlan(input: PlanInput): {
   weeks: { week: number; phase: Phase; volume_m: number }[];
   peak_m: number;
   start_m: number;
+  warnings: string[];
 } {
   const start = parse(input.start_date);
   const race = parse(input.race_date);
@@ -268,13 +271,26 @@ export function generatePlan(input: PlanInput): {
           note: 'Race effort',
         },
       ]);
+    } else if (volume_m < MIN_LONG_M + MIN_EASY_M) {
+      // Too little volume for a long run plus anything else: only easy runs that fit the target.
+      const n = Math.max(
+        1,
+        Math.min(days.length, Math.floor(volume_m / MIN_EASY_M)),
+      );
+      const order = [
+        input.long_run_day,
+        ...days.filter((d) => d !== input.long_run_day),
+      ];
+      for (const day of order.slice(0, n).sort((a, b) => a - b))
+        add(day, 'easy', volume_m / n, 'Easy run', easySteps(volume_m / n, p));
     } else {
       const longCap = Math.min(
         LONG_CAP_M[input.race],
         prevLong ? prevLong + 2000 : Infinity,
+        volume_m - MIN_EASY_M,
       );
       const long = Math.max(
-        5000,
+        MIN_LONG_M,
         Math.min(longCap, volume_m * (phase === 'base' ? 0.25 : 0.3)),
       );
       prevLong = phase === 'taper' ? prevLong : long;
@@ -295,33 +311,36 @@ export function generatePlan(input: PlanInput): {
               input.race === '5k' || input.race === '10k' ? 1000 : 1600,
               p,
             );
+        const dist = totals(steps, easyPace).distance_m;
+        if (dist > remaining) return; // a quality session that doesn't fit the week is dropped, never squeezed in
         add(
           day,
           tempo ? 'tempo' : 'intervals',
-          totals(steps, easyPace).distance_m,
+          dist,
           tempo ? 'Tempo run' : 'Intervals',
           steps,
         );
       });
     }
     const raceDay = raceWeek ? weekday(input.race_date) : 7;
+    const used = new Set(placed.map((x) => weekday(x.scheduled_on)));
     const easyDays = days.filter(
       (d) =>
+        !used.has(d) &&
         d !== input.long_run_day &&
         !qDays.includes(d) &&
         d < raceDay &&
         !(raceWeek && d === raceDay - 1),
     );
+    // Only as many easy runs as fit at >= MIN_EASY_M each, so the week sums to its target.
+    const n = Math.min(
+      easyDays.length,
+      Math.floor(Math.max(0, remaining) / MIN_EASY_M),
+    );
     const longDist =
-      placed.find((x) => x.kind === 'long')?.planned_distance_m ?? 10000;
-    for (const day of easyDays) {
-      const each = Math.max(
-        3000,
-        Math.min(
-          longDist - 1000,
-          remaining / Math.max(1, easyDays.length - easyDays.indexOf(day)),
-        ),
-      );
+      placed.find((x) => x.kind === 'long')?.planned_distance_m ?? Infinity;
+    const each = n ? Math.min(remaining / n, longDist - 1000) : 0;
+    for (const day of easyDays.slice(0, n))
       add(
         day,
         raceWeek ? 'recovery' : 'easy',
@@ -329,16 +348,22 @@ export function generatePlan(input: PlanInput): {
         raceWeek ? 'Shake-out run' : 'Easy run',
         easySteps(each, p),
       );
-    }
     workouts.push(
       ...placed.sort((a, b) => a.scheduled_on.localeCompare(b.scheduled_on)),
     );
   });
+  const warnings =
+    plan.peak_m < 2 * RACE_M[input.race]
+      ? [
+          `Your logged running (${(plan.start_m / 1000).toFixed(1)} km/week) is low for a ${input.race} race, so this plan builds gradually and peaks at ${(plan.peak_m / 1000).toFixed(1)} km/week. If you run more than you log, import those runs first; consider a later race date.`,
+        ]
+      : [];
   return {
     workouts,
     weeks: plan.weeks.map((x, i) => ({ week: i + 1, ...x })),
     peak_m: plan.peak_m,
     start_m: plan.start_m,
+    warnings,
   };
 }
 

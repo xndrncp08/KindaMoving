@@ -316,3 +316,35 @@ describe('COROS workout schema gate', () => {
     ]);
   });
 });
+
+describe('weekly sessions fit the volume target (found in live verification)', () => {
+  const weekTotals = (plan: ReturnType<typeof generatePlan>) =>
+    plan.weeks.map((w) => ({
+      target: w.volume_m,
+      planned: plan.workouts
+        .filter((x) => x.week === w.week && x.kind !== 'race')
+        .reduce((s, x) => s + x.planned_distance_m, 0),
+      last: w.week === plan.weeks.length,
+    }));
+  it('never plans more than the target for a low-volume runner', () => {
+    const low = generatePlan({
+      ...base,
+      race: '10k',
+      race_date: '2027-01-24',
+      current_weekly_m: 3300,
+    });
+    for (const w of weekTotals(low))
+      expect(w.planned).toBeLessThanOrEqual(w.target + 500);
+    expect(low.warnings[0]).toContain('low for a 10k race');
+    expect(
+      low.workouts.some((x) => x.kind === 'tempo' || x.kind === 'intervals'),
+    ).toBe(false);
+  });
+  it('fills normal weeks close to the target', () => {
+    for (const w of weekTotals(generatePlan(base)).filter((x) => !x.last)) {
+      expect(w.planned).toBeLessThanOrEqual(w.target + 500);
+      expect(w.planned).toBeGreaterThanOrEqual(w.target * 0.85);
+    }
+    expect(generatePlan(base).warnings).toEqual([]);
+  });
+});

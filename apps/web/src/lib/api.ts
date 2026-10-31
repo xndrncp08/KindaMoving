@@ -10,14 +10,27 @@ export class ApiError extends Error {
     super(message);
   }
 }
+/**
+ * CSRF guard for writes: the browser's Origin must be the origin the client actually
+ * connected to. Next normalises `request.url` (e.g. 127.0.0.1 -> localhost) and proxies
+ * rewrite hosts, so the connected origin comes from X-Forwarded-Host/Host. A cross-site
+ * attacker cannot make a victim's browser send our Host with their Origin.
+ */
+export function sameOrigin(request: Request) {
+  const origin = request.headers.get('origin');
+  if (!origin) return false;
+  const url = new URL(request.url);
+  const host =
+    request.headers.get('x-forwarded-host') ?? request.headers.get('host');
+  const proto =
+    request.headers.get('x-forwarded-proto') ?? url.protocol.replace(':', '');
+  return origin === url.origin || (!!host && origin === `${proto}://${host}`);
+}
 /** Each endpoint checks identity independently; layouts are not authorization boundaries. */
 export async function context(request: Request) {
   if (!configured())
     throw new ApiError(503, 'Database connection is not configured.');
-  if (
-    !['GET', 'HEAD'].includes(request.method) &&
-    request.headers.get('origin') !== new URL(request.url).origin
-  )
+  if (!['GET', 'HEAD'].includes(request.method) && !sameOrigin(request))
     throw new ApiError(403, 'Invalid request origin.');
   const db = await supabase();
   const { data, error } = await db.auth.getUser();

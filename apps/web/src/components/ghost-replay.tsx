@@ -30,6 +30,7 @@ interface Ghost {
     gap_s: number | null;
   };
   off_route?: { from_s: number; to_s: number; at_m: number }[];
+  skipped?: { at_m: number; length_m: number }[];
   notes?: string[];
 }
 export function GhostReplay({
@@ -216,6 +217,13 @@ export function GhostReplay({
                 position is held there.
               </p>
             )}
+            {q.data.skipped?.map((k) => (
+              <p key={k.at_m} className="notice">
+                Your ghost skipped {Math.round(k.length_m)} m of this route near{' '}
+                {(k.at_m / 1000).toFixed(2)} km, so the gap after that point
+                compares unequal distances.
+              </p>
+            ))}
           </Card>
           <Card>
             <h2>Time gap along the route</h2>

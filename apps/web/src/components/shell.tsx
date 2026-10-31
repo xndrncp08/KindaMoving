@@ -9,6 +9,7 @@ import {
   BarChart3,
   LayoutDashboard,
   Map,
+  TriangleAlert,
   CalendarDays,
   Footprints,
   Settings,
@@ -19,6 +20,8 @@ import {
 import { Button, Dialog } from '@km/ui';
 import { Brand } from './brand';
 import { JobSync } from './job-sync';
+import { OfflineSync } from './offline-sync';
+import { purgeOtherUsers } from '@/lib/offline/db';
 import { browserSupabase } from '@/lib/supabase/client';
 import { resetStores, usePreferences } from '@/lib/stores';
 import { toast } from 'sonner';
@@ -27,6 +30,7 @@ const links = [
   ['/app/activities', 'Activities', Activity],
   ['/app/analytics', 'Analyze', BarChart3],
   ['/app/routes', 'Routes', Map],
+  ['/app/conditions', 'Conditions', TriangleAlert],
   ['/app/training', 'Training', CalendarDays],
   ['/app/gear', 'Gear', Footprints],
   ['/app/settings', 'Settings', Settings],
@@ -50,6 +54,7 @@ export function Shell({
         if (event === 'SIGNED_OUT' || (session && session.user.id !== userId)) {
           client.clear();
           resetStores();
+          void purgeOtherUsers(null);
           window.location.assign('/login');
         }
       },
@@ -64,6 +69,7 @@ export function Shell({
     }
     client.clear();
     resetStores();
+    await purgeOtherUsers(null); // shared devices: no previous user's drafts or queue survive logout
     location.assign('/login');
   }
   const nav = (
@@ -109,6 +115,7 @@ export function Shell({
         </div>
       </aside>
       <div>
+        <OfflineSync userId={userId} />
         <header className="mobile-header">
           <Brand />
           <Button

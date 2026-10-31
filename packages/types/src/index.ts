@@ -45,10 +45,101 @@ export const resourceSchemas = {
   workouts: workoutSchema,
 };
 export type Resource = keyof typeof resourceSchemas;
+export type ActivitySource = 'manual' | 'file' | 'coros';
 export type Activity = z.infer<typeof activitySchema> & {
   id: string;
   user_id: string;
+  start_time?: string | null;
+  utc_offset_s?: number | null;
+  moving_s?: number | null;
+  elevation_gain_m?: number | null;
+  elevation_loss_m?: number | null;
+  avg_hr?: number | null;
+  max_hr?: number | null;
+  avg_cadence?: number | null;
+  sport?: string;
+  source?: ActivitySource;
+  source_ref?: string | null;
+  device?: Record<string, unknown>;
+  metrics?: ActivityMetrics;
+  weather?: Record<string, unknown> | null;
+  track?: { type: 'LineString'; coordinates: [number, number][] } | null;
 };
+export interface Split {
+  index: number;
+  distance_m: number;
+  elapsed_s: number;
+  moving_s: number;
+  pace_s_per_km: number | null;
+  avg_hr: number | null;
+  elevation_gain_m?: number | null;
+}
+/** Output of the analytics service (km-analytics/1), stored in activities.metrics. */
+export interface ActivityMetrics {
+  pace_s_per_km?: number | null;
+  grade_adjusted_pace_s_per_km?: number | null;
+  stoppage_count?: number;
+  stopped_s?: number;
+  pace_cv?: number | null;
+  split_type?: {
+    kind: 'even' | 'positive' | 'negative';
+    first_half_s: number;
+    second_half_s: number;
+    difference_pct: number;
+  } | null;
+  decoupling?: {
+    ef_first: number;
+    ef_second: number;
+    decoupling_pct: number;
+  } | null;
+  best_efforts?: Record<string, { elapsed_s: number; start_m: number }>;
+  classification?: { kind: string; basis: string };
+  stoppages?: {
+    start_offset_s: number;
+    duration_s: number;
+    at_distance_m: number;
+    lat: number | null;
+    lon: number | null;
+  }[];
+  quality?: Record<string, number | null>;
+  warnings?: string[];
+  distance_source?: 'gps' | 'device';
+  timezone_assumed?: boolean;
+  crosses_midnight?: boolean;
+}
+export interface ActivityStreams {
+  t: number[];
+  dist: number[];
+  lat: (number | null)[];
+  lon: (number | null)[];
+  ele: (number | null)[];
+  hr: (number | null)[];
+  cad: (number | null)[];
+  moving: boolean[];
+}
+export type JobStatus =
+  | 'queued'
+  | 'running'
+  | 'retry_wait'
+  | 'succeeded'
+  | 'failed'
+  | 'cancelled';
+export interface Job {
+  id: string;
+  kind: string;
+  status: JobStatus;
+  attempts: number;
+  max_attempts: number;
+  error_code: string | null;
+  error_message: string | null;
+  progress: Record<string, unknown>;
+  result: Record<string, unknown> | null;
+  payload: Record<string, unknown>;
+  run_after: string;
+  created_at: string;
+  updated_at: string;
+  finished_at: string | null;
+}
 export type Route = z.infer<typeof routeSchema> & {
   id: string;
   user_id: string;
@@ -130,17 +221,15 @@ export interface ConnectedProviderAccount extends OwnedRecord {
   provider: 'coros';
   status: 'disconnected' | 'connected' | 'error';
 }
-export interface SyncJob extends OwnedRecord {
-  account_id: string | null;
-  status: 'pending' | 'processing' | 'complete' | 'failed';
-  error_code: string | null;
-}
 export interface ActivityUpload extends OwnedRecord {
   filename: string;
   format: 'gpx' | 'fit';
   size_bytes: number;
   object_path: string;
-  status: 'pending' | 'processing' | 'complete' | 'failed';
+  status: 'pending' | 'processing' | 'complete' | 'duplicate' | 'failed';
+  sha256: string | null;
+  activity_id: string | null;
+  error: string | null;
 }
 export interface UserPreferences {
   id: string;

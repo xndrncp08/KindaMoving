@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { Button, Dialog } from '@km/ui';
 import { Brand } from './brand';
+import { JobSync } from './job-sync';
 import { browserSupabase } from '@/lib/supabase/client';
 import { resetStores, usePreferences } from '@/lib/stores';
 import { toast } from 'sonner';
@@ -119,6 +120,7 @@ export function Shell({
         <main id="main" className="main">
           {children}
         </main>
+        <JobSync userId={userId} />
       </div>
       <Dialog
         title="Your running"

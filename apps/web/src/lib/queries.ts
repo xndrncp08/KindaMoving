@@ -4,7 +4,14 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import type { Resource, RecordsByResource, Profile } from '@km/types';
+import type {
+  Resource,
+  RecordsByResource,
+  Profile,
+  Job,
+  ActivityStreams,
+} from '@km/types';
+import { isActive } from './sync';
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch('/api/' + path, {
     ...init,
@@ -82,5 +89,35 @@ export function detailQuery<R extends Resource>(
   return queryOptions({
     queryKey: [...keys.resource(userId, name), id],
     queryFn: () => api<RecordsByResource[R]>(name + '/' + id),
+  });
+}
+
+export function jobsQuery(userId: string) {
+  return queryOptions({
+    queryKey: keys.resource(userId, 'jobs'),
+    queryFn: () => api<Job[]>('jobs'),
+    // Poll only while something is in flight; idle accounts make no requests.
+    refetchInterval: (q) => (q.state.data?.some(isActive) ? 2000 : false),
+    staleTime: 0,
+  });
+}
+export function streamsQuery(userId: string, activityId: string) {
+  return queryOptions({
+    queryKey: [...keys.resource(userId, 'streams'), activityId],
+    queryFn: () =>
+      api<{ point_count: number; data: ActivityStreams }>(
+        'activity-streams/' + activityId,
+      ),
+    staleTime: Infinity, // streams of an activity never change after import
+    retry: (n, e) => n < 1 && !String(e.message).includes('not found'),
+  });
+}
+export function useJobAction(userId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, action }: { id: string; action: 'cancel' | 'retry' }) =>
+      api('jobs/' + id, { method: 'POST', body: JSON.stringify({ action }) }),
+    onSettled: () =>
+      client.invalidateQueries({ queryKey: keys.resource(userId, 'jobs') }),
   });
 }

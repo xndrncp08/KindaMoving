@@ -35,6 +35,11 @@ const meta = {
   shoes: ['Gear', 'A little sole searching.', 'pair of shoes'],
   workouts: ['Training', 'Make room for your next run.', 'workout'],
 } as const;
+const sourceLabel: Record<string, string> = {
+  manual: 'Manual entry',
+  file: 'Imported file',
+  coros: 'COROS',
+};
 const detailPath = {
   activities: 'activities',
   routes: 'routes',
@@ -224,7 +229,11 @@ export function ResourcePage({
                     <Link href={'/app/activities/' + r.id}>
                       {String(r.title)} <ArrowUpRight size={12} />
                     </Link>
-                    {!compact && <p className="muted">Manual entry</p>}
+                    {!compact && (
+                      <p className="muted">
+                        {sourceLabel[String(r.source ?? 'manual')]}
+                      </p>
+                    )}
                   </td>
                   <td>{String(r.started_at)}</td>
                   <td>{distance(Number(r.distance_m), profile.data?.units)}</td>
@@ -379,7 +388,7 @@ export function ResourcePage({
           </div>
         </Card>
       )}
-      {name === 'activities' && <UploadForm />}
+      {name === 'activities' && <UploadForm userId={userId} />}
       <Dialog
         title={editing ? 'Edit ' + singular : 'Add ' + singular}
         description="Stored privately in your account."

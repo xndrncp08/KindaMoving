@@ -160,3 +160,18 @@ async def validate_route(body: ValidateIn) -> dict:
     radius = segment_m(min(lats), min(lons), max(lats), max(lons)) / 2 + 500
     g = await run_in_threadpool(_graph, sum(lats) / len(lats), sum(lons) / len(lons), radius)
     return await run_in_threadpool(validate, g, coords)
+
+
+@app.post("/v1/ghost/align", dependencies=[Depends(require_service_token)])
+async def ghost_align(request: Request) -> dict:
+    body = await request.json()
+    try:
+        ref, ghost = body["ref"]["streams"], body["ghost"]["streams"]
+        for st in (ref, ghost):
+            if not all(isinstance(st[k], list) for k in ("t", "lat", "lon")) or len(st["t"]) > 20001:
+                raise ValueError
+    except (KeyError, TypeError, ValueError) as exc:
+        raise HTTPException(400, "ref.streams and ghost.streams with t/lat/lon arrays are required") from exc
+    from .ghost import align
+
+    return await run_in_threadpool(align, {"streams": ref}, {"streams": ghost})

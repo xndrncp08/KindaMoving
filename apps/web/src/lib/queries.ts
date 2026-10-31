@@ -62,7 +62,7 @@ export function useRecordMutation(id: string, name: Resource) {
         method,
         body: method === 'DELETE' ? undefined : JSON.stringify(data),
       }),
-    onSuccess: () => client.invalidateQueries({ queryKey: keys.user(id) }),
+    onSuccess: () => client.invalidateQueries({ queryKey: keys.user(id) }), // includes gear analytics, summaries and training
   });
 }
 
@@ -224,5 +224,50 @@ export function trainingQuery(userId: string, weekStart: string) {
       api<TrainingOverview>(
         `training/overview?from=${weekStart}&to=${isoDay(end)}&today=${today}`,
       ),
+  });
+}
+export interface GearShoe {
+  id: string;
+  title: string;
+  brand: string;
+  retired: boolean;
+  retired_on: string | null;
+  is_default: boolean;
+  total_m: number;
+  runs: number;
+  last_used: string | null;
+  target_m: number;
+  wear_fraction: number;
+  cost_per_km: number | null;
+  currency: string;
+  weekly_rate_m: number;
+  projected_target_on: string | null;
+  by_kind: Record<
+    string,
+    {
+      m: number;
+      runs: number;
+      pace_s_per_km: number | null;
+      avg_hr: number | null;
+    }
+  > | null;
+  monthly: { month: string; m: number }[] | null;
+}
+export function gearQuery(userId: string) {
+  const today = new Date().toLocaleDateString('en-CA');
+  return queryOptions({
+    queryKey: [...keys.resource(userId, 'gear-analytics'), today],
+    queryFn: () =>
+      api<{
+        shoes: GearShoe[];
+        rotation_30d: Record<string, number>;
+        unassigned_runs_90d: number;
+        unassigned: {
+          id: string;
+          title: string;
+          started_at: string;
+          distance_m: number;
+        }[];
+      }>('gear?today=' + today),
   });
 }

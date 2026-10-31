@@ -30,7 +30,7 @@ export const useMap = create<{
   }) => void;
   select: (id: string | null) => void;
 }>((set) => ({
-  viewport: { longitude: -113.49, latitude: 53.54, zoom: 11 },
+  viewport: { longitude: -114.07, latitude: 51.045, zoom: 11 },
   selectedId: null,
   setViewport: (viewport) => set({ viewport }),
   select: (selectedId) => set({ selectedId }),

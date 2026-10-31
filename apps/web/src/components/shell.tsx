@@ -7,6 +7,7 @@ import { useTheme } from 'next-themes';
 import {
   Activity,
   BarChart3,
+  Ghost,
   LayoutDashboard,
   Map,
   TriangleAlert,
@@ -29,6 +30,7 @@ const links = [
   ['/app', 'Overview', LayoutDashboard],
   ['/app/activities', 'Activities', Activity],
   ['/app/analytics', 'Analyze', BarChart3],
+  ['/app/ghost', 'Ghost', Ghost],
   ['/app/routes', 'Routes', Map],
   ['/app/conditions', 'Conditions', TriangleAlert],
   ['/app/training', 'Training', CalendarDays],

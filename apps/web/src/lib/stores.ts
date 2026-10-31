@@ -108,6 +108,22 @@ export const useInteraction = create<{
   open: (dialog) => set({ dialog }),
   announce: (announcement) => set({ announcement }),
 }));
+/** Ghost replay playback (seconds into the replay). */
+export const useGhostPlayback = create<{
+  t: number;
+  playing: boolean;
+  speed: number;
+  setT: (t: number) => void;
+  setPlaying: (p: boolean) => void;
+  setSpeed: (s: number) => void;
+}>((set) => ({
+  t: 0,
+  playing: false,
+  speed: 30,
+  setT: (t) => set({ t }),
+  setPlaying: (playing) => set({ playing }),
+  setSpeed: (speed) => set({ speed }),
+}));
 /** Reset interaction state when identity changes; server records live only in Query. */
 export function resetStores() {
   useDashboard.setState(useDashboard.getInitialState(), true);
@@ -116,4 +132,5 @@ export function resetStores() {
   useWorkoutBuilder.setState(useWorkoutBuilder.getInitialState(), true);
   useComparison.setState(useComparison.getInitialState(), true);
   useInteraction.setState(useInteraction.getInitialState(), true);
+  useGhostPlayback.setState(useGhostPlayback.getInitialState(), true);
 }

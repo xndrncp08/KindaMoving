@@ -194,3 +194,35 @@ export function routeConditionsQuery(userId: string, routeId: string) {
     refetchInterval: 120000,
   });
 }
+export interface TrainingOverview {
+  workouts: {
+    id: string;
+    title: string;
+    scheduled_on: string;
+    kind: string;
+    status: 'planned' | 'completed' | 'missed' | 'skipped';
+    planned_distance_m: number | null;
+    activity_id: string | null;
+    route_id: string | null;
+    compliance: { grade?: string; ratio?: number; reason?: string } | null;
+    moved_from: string | null;
+    steps: import('./training/steps').Step[];
+    description: string;
+  }[];
+  runs: { id: string; started_at: string; distance_m: number }[];
+  changes: import('./training/reconcile').Change[];
+  paces: import('./training/paces').Paces;
+}
+const isoDay = (d: Date) => d.toLocaleDateString('en-CA');
+export function trainingQuery(userId: string, weekStart: string) {
+  const today = isoDay(new Date());
+  const end = new Date(weekStart + 'T12:00:00');
+  end.setDate(end.getDate() + 6);
+  return queryOptions({
+    queryKey: [...keys.resource(userId, 'training'), weekStart, today],
+    queryFn: () =>
+      api<TrainingOverview>(
+        `training/overview?from=${weekStart}&to=${isoDay(end)}&today=${today}`,
+      ),
+  });
+}

@@ -7,6 +7,7 @@ import { Card, DataTable, Skeleton } from '@km/ui';
 import { streamsQuery, api, keys } from '@/lib/queries';
 import { distance, duration } from '@/lib/metrics';
 import { chartSeries } from '@/lib/streams';
+import { WhyDifferent } from './why-different';
 const Charts = dynamic(() => import('./activity-charts'), {
   ssr: false,
   loading: () => <Skeleton />,
@@ -158,6 +159,7 @@ export function ActivityAnalysis({
           </p>
         )}
       </Card>
+      <WhyDifferent userId={userId} activityId={a.id} />
       {streams.isPending ? (
         <Skeleton />
       ) : (

@@ -6,6 +6,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import {
   Activity,
+  BarChart3,
   LayoutDashboard,
   Map,
   CalendarDays,
@@ -24,6 +25,7 @@ import { toast } from 'sonner';
 const links = [
   ['/app', 'Overview', LayoutDashboard],
   ['/app/activities', 'Activities', Activity],
+  ['/app/analytics', 'Analyze', BarChart3],
   ['/app/routes', 'Routes', Map],
   ['/app/training', 'Training', CalendarDays],
   ['/app/gear', 'Gear', Footprints],

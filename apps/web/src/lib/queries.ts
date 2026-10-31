@@ -121,3 +121,44 @@ export function useJobAction(userId: string) {
       client.invalidateQueries({ queryKey: keys.resource(userId, 'jobs') }),
   });
 }
+export interface Observation {
+  key: string;
+  label: string;
+  unit: string;
+  value: number;
+  typical: number;
+  difference: number;
+  robust_z: number | null;
+  n: number;
+}
+export interface Explanation {
+  status: 'ok' | 'insufficient_history' | 'not_applicable';
+  message?: string;
+  method?: string;
+  comparables?: {
+    id: string;
+    title: string;
+    start_time: string;
+    distance_m: number;
+    same_route: boolean;
+  }[];
+  measured?: Observation[];
+  modeled?: Observation[];
+  context?: Observation[];
+  possible_explanations?: { text: string; evidence: string[] }[];
+}
+export function explainQuery(userId: string, activityId: string) {
+  return queryOptions({
+    queryKey: [...keys.resource(userId, 'analytics'), 'explain', activityId],
+    queryFn: () => api<Explanation>('analytics/explain/' + activityId),
+    retry: false,
+  });
+}
+export function overviewQuery(userId: string) {
+  const today = new Date().toLocaleDateString('en-CA');
+  return queryOptions({
+    queryKey: [...keys.resource(userId, 'analytics'), 'overview', today],
+    queryFn: () =>
+      api<import('./analytics').Overview>('analytics/overview?today=' + today),
+  });
+}

@@ -1,3 +1,4 @@
+import { shoeSchema } from '@km/types';
 import { beforeEach, afterEach, it, expect, vi } from 'vitest';
 import {
   render,
@@ -67,12 +68,9 @@ it('submits a validated activity with a shoe assignment', async () => {
       onSaved={saved}
       shoes={[
         {
+          ...shoeSchema.parse({ title: 'Daily', brand: 'Test' }),
           id: 'a0000000-0000-4000-8000-000000000001',
           user_id: 'runner',
-          title: 'Daily',
-          brand: 'Test',
-          retired: false,
-          initial_distance_m: 0,
         },
       ]}
     />,

@@ -50,3 +50,11 @@ def test_oversized_payload_rejected(client):
 
     big = b"0" * (api.MAX_UPLOAD_BYTES + 1)
     assert client.post("/v1/activities/parse?format=gpx", content=big, headers=auth()).status_code == 413
+
+
+def test_ghost_endpoint_validates_and_aligns(client):
+    from .test_ghost import LOOP, streams
+
+    assert client.post("/v1/ghost/align", json={"ref": {}}, headers=auth()).status_code == 400
+    r = client.post("/v1/ghost/align", json={"ref": {"streams": streams(LOOP, 3.0)}, "ghost": {"streams": streams(LOOP, 2.9)}}, headers=auth())
+    assert r.status_code == 200 and r.json()["status"] == "ok"

@@ -5,6 +5,7 @@ import type { Activity, Resource } from '@km/types';
 import { ActivityAnalysis } from './activity-analysis';
 import { RouteDetail } from './route-detail';
 import { WorkoutPanel } from './workout-panel';
+import { ShoeWear } from './gear-overview';
 import { Card, ErrorState, Skeleton, EmptyState } from '@km/ui';
 import {
   recordsQuery,
@@ -78,6 +79,7 @@ export function Detail({
           userId={userId}
         />
       )}
+      {name === 'shoes' && <ShoeWear userId={userId} shoeId={id} />}
       {name === 'shoes' && (
         <Card>
           <h2>Shoe history</h2>

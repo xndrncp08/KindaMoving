@@ -89,3 +89,5 @@ Local web app + local analytics service against hosted Supabase (`yqzbsuandpdlvg
 - `scripts/smoke-production.py`: protected workflow/manual, read-only liveness/CSP, unauthorized scheduler/analytics denial and authenticated dependency readiness. Target URLs are trusted environment variables, not PR/user-dispatch input. It never schedules jobs, imports or deletes data. Run against actual deployment URLs before promotion.
 
 Final local/CI counts and external blockers are recorded in [PHASE3_HANDOFF](PHASE3_HANDOFF.md). Two existing React Hook Form compiler warnings and the FastAPI/Starlette httpx deprecation warning remain unrelated to this change.
+
+`python scripts/check-analytics-package.py` builds a non-editable analytics wheel in a temporary directory and asserts the routing/readiness modules are included. CI runs it because editable installs/source-directory execution can mask omitted Python subpackages. The previously omitted routing subpackage was reproduced in a built wheel, then corrected through setuptools package discovery.

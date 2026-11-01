@@ -34,6 +34,7 @@ jobs:
           python-version: '3.12'
       - run: pip install -e 'services/analytics[test]'
       - run: python -m pytest -q services/analytics/tests
+      - run: python scripts/check-analytics-package.py
   database:
     runs-on: ubuntu-24.04
     steps:

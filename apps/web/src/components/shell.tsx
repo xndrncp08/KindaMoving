@@ -8,16 +8,17 @@ import {
   Activity,
   BarChart3,
   Ghost,
-  LayoutDashboard,
+  House,
   Map,
   TriangleAlert,
   CalendarDays,
   Footprints,
   ScanEye,
   Settings,
-  Menu,
+  Ellipsis,
   SunMoon,
   LogOut,
+  Upload,
 } from 'lucide-react';
 import { Button, Dialog } from '@km/ui';
 import { Brand } from './brand';
@@ -27,18 +28,42 @@ import { purgeOtherUsers } from '@/lib/offline/db';
 import { browserSupabase } from '@/lib/supabase/client';
 import { resetStores, usePreferences } from '@/lib/stores';
 import { toast } from 'sonner';
-const links = [
-  ['/app', 'Overview', LayoutDashboard],
-  ['/app/activities', 'Activities', Activity],
-  ['/app/analytics', 'Analyze', BarChart3],
-  ['/app/ghost', 'Ghost', Ghost],
+type Item = readonly [href: string, label: string, icon: typeof House];
+// Grouped by what the runner is trying to do; desktop rail and mobile "More" share this order.
+const groups: readonly (readonly [string | null, readonly Item[]])[] = [
+  [null, [['/app', 'Home', House]]],
+  [
+    'Review',
+    [
+      ['/app/activities', 'Runs', Activity],
+      ['/app/analytics', 'Trends', BarChart3],
+      ['/app/ghost', 'Ghost', Ghost],
+    ],
+  ],
+  [
+    'Plan',
+    [
+      ['/app/routes', 'Routes', Map],
+      ['/app/training', 'Training', CalendarDays],
+      ['/app/conditions', 'Conditions', TriangleAlert],
+    ],
+  ],
+  [
+    'Equip',
+    [
+      ['/app/gear', 'Gear', Footprints],
+      ['/app/form', 'Form', ScanEye],
+    ],
+  ],
+];
+const tabs: readonly Item[] = [
+  ['/app', 'Home', House],
+  ['/app/activities', 'Runs', Activity],
   ['/app/routes', 'Routes', Map],
-  ['/app/conditions', 'Conditions', TriangleAlert],
   ['/app/training', 'Training', CalendarDays],
-  ['/app/gear', 'Gear', Footprints],
-  ['/app/form', 'Form', ScanEye],
-  ['/app/settings', 'Settings', Settings],
-] as const;
+];
+const active = (path: string, href: string) =>
+  href === '/app' ? path === href : path.startsWith(href);
 export function Shell({
   children,
   userId,
@@ -76,45 +101,56 @@ export function Shell({
     await purgeOtherUsers(null); // shared devices: no previous user's drafts or queue survive logout
     location.assign('/login');
   }
+  const link = ([href, label, Icon]: Item) => (
+    <Link
+      key={href}
+      href={href}
+      className="nav-link"
+      aria-current={active(path, href) ? 'page' : undefined}
+      onClick={() => setMenu(false)}
+    >
+      <Icon size={18} aria-hidden="true" />
+      {label}
+    </Link>
+  );
   const nav = (
-    <nav aria-label="App navigation">
-      {links.map(([href, label, Icon]) => (
-        <Link
-          key={href}
-          href={href}
-          className="nav-link"
-          aria-current={
-            (href === '/app' ? path === href : path.startsWith(href))
-              ? 'page'
-              : undefined
-          }
-          onClick={() => setMenu(false)}
+    <nav aria-label="App navigation" className="nav-groups">
+      {groups.map(([label, items]) => (
+        <div
+          className="nav-group"
+          key={label ?? 'home'}
+          role="group"
+          aria-label={label ?? undefined}
         >
-          <Icon size={18} />
-          {label}
-        </Link>
+          {label && <p className="nav-group-label">{label}</p>}
+          {items.map(link)}
+        </div>
       ))}
+      <div className="nav-group">{link(['/app/settings', 'Settings', Settings])}</div>
     </nav>
   );
+  const toggleTheme = () =>
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
+  const moreActive = !tabs.some(([href]) => active(path, href));
   return (
     <div className="shell">
       <aside className="sidebar">
         <Brand />
+        <Button asChild>
+          <Link href="/app/activities#import">
+            <Upload size={16} aria-hidden="true" />
+            Import Run
+          </Link>
+        </Button>
         {nav}
-        <div className="sidebar-bottom stack">
-          <p className="eyebrow muted">Forward is a pace.</p>
-          <Button
-            variant="outline"
-            onClick={() =>
-              setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
-            }
-          >
-            <SunMoon size={16} />
-            Switch theme
+        <div className="sidebar-bottom">
+          <Button variant="ghost" onClick={toggleTheme}>
+            <SunMoon size={16} aria-hidden="true" />
+            Switch Theme
           </Button>
           <Button variant="ghost" onClick={logout}>
-            <LogOut size={16} />
-            Log out
+            <LogOut size={16} aria-hidden="true" />
+            Log Out
           </Button>
         </div>
       </aside>
@@ -122,12 +158,11 @@ export function Shell({
         <OfflineSync userId={userId} />
         <header className="mobile-header">
           <Brand />
-          <Button
-            variant="outline"
-            aria-label="Open navigation"
-            onClick={() => setMenu(true)}
-          >
-            <Menu size={20} />
+          <Button asChild variant="outline">
+            <Link href="/app/activities#import">
+              <Upload size={16} aria-hidden="true" />
+              Import
+            </Link>
           </Button>
         </header>
         <main id="main" className="main">
@@ -135,23 +170,48 @@ export function Shell({
         </main>
         <JobSync userId={userId} />
       </div>
+      <nav className="tabbar" aria-label="Primary">
+        {tabs.map(([href, label, Icon]) => (
+          <Link
+            key={href}
+            href={href}
+            className="tab"
+            aria-current={active(path, href) ? 'page' : undefined}
+          >
+            <Icon size={20} aria-hidden="true" />
+            {label}
+          </Link>
+        ))}
+        <button
+          type="button"
+          className="tab"
+          aria-expanded={menu}
+          aria-haspopup="dialog"
+          aria-current={moreActive ? 'page' : undefined}
+          onClick={() => setMenu(true)}
+        >
+          <Ellipsis size={20} aria-hidden="true" />
+          More
+        </button>
+      </nav>
       <Dialog
-        title="Your running"
-        description="Navigate your running log."
+        title="Everything else"
+        description="Review, plan and equip, grouped the same way as on desktop."
         open={menu}
         onOpenChange={setMenu}
-        drawer
+        sheet
       >
         {nav}
-        <Button
-          variant="outline"
-          onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-        >
-          Switch theme
-        </Button>
-        <Button variant="ghost" onClick={logout}>
-          Log out
-        </Button>
+        <div className="row">
+          <Button variant="outline" onClick={toggleTheme}>
+            <SunMoon size={16} aria-hidden="true" />
+            Switch Theme
+          </Button>
+          <Button variant="ghost" onClick={logout}>
+            <LogOut size={16} aria-hidden="true" />
+            Log Out
+          </Button>
+        </div>
       </Dialog>
     </div>
   );

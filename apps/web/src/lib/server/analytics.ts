@@ -17,6 +17,7 @@ export async function analytics<T>(
   try {
     response = await fetch(base.replace(/\/$/, '') + path, {
       ...init,
+      redirect: 'error',
       headers: { ...init.headers, Authorization: 'Bearer ' + token },
       signal: AbortSignal.timeout(init.timeoutMs ?? 60000),
       cache: 'no-store',

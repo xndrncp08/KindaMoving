@@ -109,7 +109,8 @@ export async function importOfficial(db: SupabaseClient, now = new Date()) {
           p_ends_at: o.ends_at?.toISOString() ?? null,
           p_description: o.description,
         });
-        if (!error) out[name]++;
+        if (error) throw new Error('Condition persistence failed');
+        out[name]++;
       }
     } catch (e) {
       out.errors.push(`${name}: ${e instanceof Error ? e.message : 'failed'}`);

@@ -2,7 +2,15 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Button, Card, DataTable, ErrorState, Input, Skeleton } from '@km/ui';
+import {
+  Button,
+  Card,
+  DataTable,
+  ErrorState,
+  Input,
+  Skeleton,
+  ConfirmButton,
+} from '@km/ui';
 import { api, keys } from '@/lib/queries';
 import { browserSupabase } from '@/lib/supabase/client';
 type Stat = { median: number; p10: number; p90: number; n: number } | null;
@@ -260,16 +268,15 @@ export function FormAnalysis({ userId }: { userId: string }) {
                 Compare
               </label>
             )}
-            <Button
-              variant="ghost"
+            <ConfirmButton
               disabled={remove.isPending}
-              onClick={() =>
-                confirm('Delete this analysis and its video?') &&
-                remove.mutate(a.id)
-              }
+              title="Delete this analysis?"
+              description="The analysis and its annotated video are removed permanently."
+              confirmLabel="Delete Analysis"
+              onConfirm={() => remove.mutate(a.id)}
             >
               Delete
-            </Button>
+            </ConfirmButton>
           </div>
         </Card>
       ))}

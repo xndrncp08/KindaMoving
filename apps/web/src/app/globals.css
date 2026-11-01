@@ -13,7 +13,7 @@
   --ink-2: #3b3f3b;
   --muted: #5b6058;
   --line: #dcd8cd;
-  --line-strong: #b5b0a3;
+  --line-strong: #8a8579; /* ≥3:1 on every light surface (WCAG 1.4.11) */
   /* The accent. Volt is a fill; on light paper its text/stroke form is --accent-strong. */
   --accent: #d4ff3a;
   --accent-ink: #161816;
@@ -83,7 +83,7 @@
   --ink-2: #d2d0c8;
   --muted: #a3a89f;
   --line: #2b302b;
-  --line-strong: #434a42;
+  --line-strong: #6b7268; /* ≥3:1 on every dark surface */
   --accent-strong: #d4ff3a;
   --accent-soft: #2a3310;
   --meter: var(--accent);

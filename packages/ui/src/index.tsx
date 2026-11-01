@@ -45,9 +45,7 @@ const provenanceText: Record<ProvenanceKind, string> = {
 };
 /** How far a number can be trusted: recorded by a sensor, modelled, or deduced from context. */
 export function Provenance({ kind }: { kind: ProvenanceKind }) {
-  return (
-    <span className={`prov prov-${kind}`}>{provenanceText[kind]}</span>
-  );
+  return <span className={`prov prov-${kind}`}>{provenanceText[kind]}</span>;
 }
 export function Metric({
   label,
@@ -171,6 +169,53 @@ export function Dialog({
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
+  );
+}
+/** In-app confirmation for destructive actions (replaces blocking window.confirm). */
+export function ConfirmButton({
+  children,
+  title,
+  description,
+  confirmLabel,
+  onConfirm,
+  disabled,
+  variant = 'ghost',
+}: {
+  children: React.ReactNode;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  disabled?: boolean;
+  variant?: VariantProps<typeof variants>['variant'];
+}) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <>
+      <Button
+        variant={variant}
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+      >
+        {children}
+      </Button>
+      <Dialog
+        title={title}
+        description={description}
+        open={open}
+        onOpenChange={setOpen}
+      >
+        <Button
+          variant="destructive"
+          onClick={() => {
+            setOpen(false);
+            onConfirm();
+          }}
+        >
+          {confirmLabel}
+        </Button>
+      </Dialog>
+    </>
   );
 }
 export const Tabs = TabsPrimitive.Root;

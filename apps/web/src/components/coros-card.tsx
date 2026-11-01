@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Button, ErrorState, Skeleton } from '@km/ui';
+import { Button, ErrorState, Skeleton, ConfirmButton } from '@km/ui';
 import { api, jobsQuery, keys } from '@/lib/queries';
 interface Status {
   status: 'disconnected' | 'connected' | 'error' | 'reauth_required';
@@ -157,17 +157,15 @@ export function CorosCard({ userId }: { userId: string }) {
             >
               Import last 90 days
             </Button>
-            <Button
-              variant="ghost"
+            <ConfirmButton
               disabled={disconnect.isPending}
-              onClick={() =>
-                confirm(
-                  'Disconnect COROS? Imported activities stay in your log.',
-                ) && disconnect.mutate()
-              }
+              title="Disconnect COROS?"
+              description="KindaMoving revokes its access and deletes the stored tokens. Imported activities stay in your log."
+              confirmLabel="Disconnect COROS"
+              onConfirm={() => disconnect.mutate()}
             >
               Disconnect
-            </Button>
+            </ConfirmButton>
           </div>
           <details>
             <summary>

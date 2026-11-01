@@ -7,7 +7,7 @@ test('marketing is responsive, honest and links to signup', async ({
     page.getByRole('heading', { name: 'Run smarter. Suffer better.' }),
   ).toBeVisible();
   await expect(
-    page.getByText('Integration planned', { exact: true }),
+    page.getByText('Official COROS sign-in', { exact: true }),
   ).toBeVisible();
   expect(
     await page.evaluate(

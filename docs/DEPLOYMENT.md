@@ -1,41 +1,55 @@
-# Deployment and operations
+# Production deployment and operations
 
-## Components
+Phase 3 prepares deployable configuration; it does not provision billable infrastructure or apply hosted database changes. See [PHASE3_HANDOFF](PHASE3_HANDOFF.md) for actual evidence and remaining gates.
 
-| Component                        | Runtime                                     | Notes                                                                                                                        |
-| -------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| Web (`apps/web`)                 | Node 22, Next.js 16                         | Any Node host (e.g. Vercel). Route handlers use `after()`; set `maxDuration` ≥ 60 s for `/api/jobs/run` and route generation |
-| Analytics (`services/analytics`) | Python 3.12, `uvicorn km_analytics.api:app` | Container or PaaS (e.g. Render). Install `.[form]` and provide `FORM_MODEL_PATH` only if KM Form is enabled                  |
-| Database                         | Supabase Postgres 17 + PostGIS              | Apply `supabase/migrations` in order                                                                                         |
-| Storage                          | Supabase Storage                            | Buckets created by migrations: `activity-files`, `form-videos`, `form-results`                                               |
+## Selected topology and plans
 
-## Environment
+- **Vercel Pro**, Node 22, Next.js App Router, project root **apps/web**, include workspace files outside that directory. `apps/web/vercel.json` installs from the workspace root and runs the app build; all API functions have a 300-second budget unless a route explicitly selects less. Pro is required for minute-resolution cron and commercial use. Hobby's daily-only scheduling cannot provide the queue/conditions cadence. [Cron plan limits](https://vercel.com/docs/cron-jobs/usage-and-pricing), [function limits](https://vercel.com/docs/functions/limitations).
+- **Render paid 0.5c-512mb** Python web service, one process and concurrency two. Free services sleeping/cold-starting are inappropriate for the synchronous web-to-analytics timeout. `render.yaml` is configuration only: auto deploy is **off**, no disk, no database replacement, secrets prompt only at initial creation. Render must be publicly reachable over HTTPS from Vercel; a Render-private hostname cannot serve Vercel. Start on the smallest always-on plan, validate pilot graph memory/latency, and increase capacity before enabling MediaPipe or a whole-city graph. [Compute plans](https://render.com/docs/compute-plans), [Blueprint specification](https://render.com/docs/blueprint-spec).
+- Existing **Supabase Postgres/PostGIS/Auth/Storage** remains the data authority. No Phase 3 migration changes production schema or data. Align host regions with the existing Supabase location after checking that project's actual region; no region was guessed in config.
 
-Web: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_SITE_URL`, `SUPABASE_SECRET_KEY`, `ANALYTICS_URL`, `ANALYTICS_SERVICE_TOKEN`, `CRON_SECRET`, `TOKEN_ENCRYPTION_KEY` (`openssl rand -base64 32`), optional `OPEN_METEO_API_KEY` / `WEATHER_DISABLED`.
-Analytics: `ANALYTICS_SERVICE_TOKEN` (same value), `NETWORK_DATABASE_URL` (the `km_network_reader` login), optional `FORM_MODEL_PATH`.
+## Required setup and release sequence
 
-## First deployment
+1. Record a tested Git SHA. Require `web`, `analytics`, and `database` CI checks on main, restrict merges, and configure a GitHub `production` environment with required reviewers and main-only deployment access.
+2. Confirm Supabase project, backups/restore access, migration history and advisors. Do not blindly replay migrations. Enable the existing `km_network_reader` login outside migrations using a generated password; retain SELECT-only grants. See [NETWORK_IMPORT](NETWORK_IMPORT.md).
+3. Run the native database timezone acceptance script. Supabase documents updated tzdata in **15.19.0.003 / 17.11.0.003 or later**; the PostgreSQL major/minor alone is insufficient evidence. Use the provider's supported upgrade flow with backup/maintenance review, never rewrite historical activity timestamps. [Supabase notice](https://supabase.com/changelog/tzdata-local-time-vancouver-edmonton-casablanca).
+4. Review and dry-run the Calgary pilot network. An actual import is an operator action against reference tables, not an automated deploy/migration step. Approve replacements explicitly. Keep the resulting data/license provenance and restart analytics after replacement to invalidate every process's graph cache.
+5. Review [credentials and costs](PRODUCTION_REQUIREMENTS.md). Apply the Render Blueprint only after confirming its workspace, plan, region and secrets. The [Blueprint creation page](https://dashboard.render.com/blueprint/new?repo=https://github.com/xndrncp08/KindaMoving) reads the committed file; applying it creates billable compute. Do not reuse an unrelated existing service name.
+6. Set shared analytics token, the verified read-only DSN and `KM_DEPLOYMENT=production` on Render. `/healthz` is process liveness; `/readyz` is the platform health gate. Startup validates configuration; readiness checks DB permissions, a nonempty Calgary network and native historical/current tzdata. Probe results cache for 15 seconds, timeouts are bounded and errors never include credentials.
+7. Configure a Vercel project with root `apps/web`, production environment variables and Node 22. Use a separate preview Supabase project and secrets for previews. Never connect unreviewed preview code to the production service-role key. Set `KM_DEPLOYMENT=production` in real deployment environments; leave it unset/development for credential-free CI builds. Rebuild after changing NEXT_PUBLIC variables.
+8. Configure Supabase SMTP, allowed origins, confirmation/recovery templates and Auth rate limits using [AUTHENTICATION](AUTHENTICATION.md). COROS callbacks must use the final origin; its dynamic registration is per issuer and redirect URI. Do not rotate TOKEN_ENCRYPTION_KEY as part of deployment.
+9. Gate Vercel production assignment with required deployment checks, or stage a production build without assigning domains, smoke it, then promote it. Keep Render auto deploy off until the exact SHA passes CI. Configure the selected provider's deployment checks in its dashboard; these settings are not created by source configuration alone. Never publish a preview build merely because it passed public-page checks.
+10. Set GitHub production environment variables `WEB_BASE_URL`, `ANALYTICS_URL` and secrets `CRON_SECRET`, `ANALYTICS_SERVICE_TOKEN`. Run the **Production read-only smoke** workflow from main, or `python3 scripts/smoke-production.py` with the same values in a secure shell. It does not enqueue, import or delete anything, does not follow redirects with tokens, and never logs secrets. A protected staged Vercel URL needs its separately configured platform bypass; this script does not bypass SSO automatically.
+11. Perform the two-user release acceptance and synthetic upload/route journey in a dedicated staging project, then promote. Do not run destructive acceptance against real users. Record URLs, SHA, smoke results and verified capacity. No deployment success is implied by the presence of these files.
 
-1. Apply migrations (`npx supabase db push`, or run each file in order in the SQL editor), then run the Supabase security and performance advisors.
-2. `alter role km_network_reader with login password '<random>';` then build `NETWORK_DATABASE_URL` from the pooler host with that role.
-3. Import the pilot network: `scripts/import_network.py --region calgary --bbox -114.32,50.84,-113.86,51.21 --elevation open-meteo --database-url "$ADMIN_URL"`. For the whole city, import in tiles, or from a Geofabrik Alberta extract filtered to Calgary, to respect Overpass usage limits.
-4. Download the pose model if KM Form is enabled: `curl -L -o models/pose_landmarker_lite.task https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/latest/pose_landmarker_lite.task` (sha256 `59929e1d…690d574a`).
-5. Supabase Auth: add the site URL and `/auth/callback` to the redirect allowlist; configure SMTP and rate limits.
-6. COROS: nothing to pre-register. The app registers itself dynamically per issuer and redirect URI on the first connect (`/api/coros/callback`).
+## Schedules and runtime bounds
 
-## Schedules (`Authorization: Bearer $CRON_SECRET`)
+All schedules are UTC and production-only. Vercel sends `Authorization: Bearer CRON_SECRET`; constant-time verification is already shared by the handlers.
 
-| Endpoint                       | Suggested cadence | Purpose                                                                                |
-| ------------------------------ | ----------------- | -------------------------------------------------------------------------------------- |
-| `GET /api/jobs/run`            | every minute      | Durable job drain (imports, COROS sync/pushes, form analysis); recovers expired leases |
-| `GET /api/conditions/official` | every 15 minutes  | City of Calgary closures and incidents                                                 |
-| `GET /api/form/cleanup`        | daily             | Delete annotated videos past their 7-day retention                                     |
+| Path                       | UTC cadence      | Operational behavior                                                                                                                                                                                                                                                                                         |
+| -------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `/api/jobs/run`            | every minute     | Claims use leases/SKIP LOCKED; 100 s claim budget, one in-flight handler can extend beyond it. 300 s function limit covers a final 170 s video request plus overhead. Leases expire after 240 s; failures retry with existing backoff. Monitor timeouts rather than treating a claim budget as cancellation. |
+| `/api/conditions/official` | every 15 minutes | Fixed Calgary feeds; fetch/persistence failures now return 503 so monitoring can detect stale inputs. Upserts remain idempotent.                                                                                                                                                                             |
+| `/api/form/cleanup`        | daily 09:17 UTC  | Up to 500 expired annotated outputs per pass. References clear only after Storage confirms deletion; failure returns 503 and retains retry state. Monitor backlog; invoke additional authenticated passes if over 500, with operator authorization.                                                          |
 
-Vercel Hobby crons run at most daily, so use a plan with minute crons or an external scheduler for `/api/jobs/run`. Uploads and syncs still start immediately through `after()`.
+`after(kickJobs)` remains best-effort; durability relies on the scheduled drain. Vercel may overlap invocations; the existing lease protocol handles job overlap. Feed upserts and deletion retries are idempotent, but exactly-once scheduling is not claimed. External schedulers are an alternative only if they support HTTPS, bearer headers and equivalent runtime bounds; disable duplicate schedules when switching.
 
-## Operations
+## CSP and caching
 
-- **Job health**: `sync_jobs` by status; `sync_job_events` holds every transition (users see their own under Settings → COROS → Diagnostics). Stuck `running` rows self-heal when their lease expires.
-- **COROS quota**: `connected_provider_accounts.fit_quota`; deferred records show as `deferred_quota` and resume automatically.
-- **Backups**: Supabase PITR or daily backups; the network can be re-imported from source.
-- **Rotating `TOKEN_ENCRYPTION_KEY`** invalidates stored COROS tokens (users reconnect). Plan a dual-key rotation before doing it on a live system.
+Proxy issues a fresh nonce in both request and response CSP. The root reads that nonce and passes it to next-themes. Scripts use nonce + strict-dynamic, no unsafe-inline or unsafe-eval in production. Worker sources are same-origin/blob; only the configured Supabase origin/WSS and OpenFreeMap connect origins are granted. Analytics, COROS, weather and municipal feed requests remain server-to-server, so their origins are deliberately absent from browser CSP. Inline styles are the documented exception needed by React/Radix/MapLibre/Recharts. Browser tests verify actual worker/GeoJSON rendering and parser-inserted script blocking.
+
+Nonce-based HTML is now dynamically rendered, including marketing; do not enable ISR/shared HTML caching or cache a CSP header independently of its matching HTML. Private API/session responses remain no-store. Existing service-worker offline copies retain the original HTML/CSP pair and are purged by existing logout behavior. CSP does not replace RLS, authorization or output escaping.
+
+## Hosting limits and feature acceptance
+
+Manual GPX/FIT upload now advertises/enforces **4 MiB** plus bounded multipart overhead, below Vercel's 4.5 MB request ceiling. Python and COROS server-to-server parsing limits are unchanged. Form video input still uploads directly to Supabase Storage and is fetched by the job handler. Check output memory, response and execution limits with realistic synthetic media before enabling Form in production. A larger ingress path should extend the existing direct-storage/job pattern rather than bypass validation.
+
+Render's default build excludes the optional Form extra/model. Existing Form endpoints fail honestly with 503 until the operator installs the optional extra, supplies a checksum-verified model and proves plan capacity. No real-footage accuracy claim is made. Do not promise all-media availability on 512 MB.
+
+## Rollback
+
+Record the prior Vercel deployment ID and Render deploy ID/SHA before release. Roll back Vercel to its last known-good production deployment, then restore Render's compatible prior build. Vercel rollback can disable automatic domain assignment until a later explicit promotion. Never roll back database schema or delete data automatically; Phase 3 needs no schema migration. A reference network replacement is a separate approved operation, recoverable from the reviewed extract/provenance snapshot, followed by analytics restart. Preserve TOKEN_ENCRYPTION_KEY and token-vault compatibility across rollback. Re-run read-only smoke and inspect job retry/backlog after recovery.
+
+## Monitoring and alerts
+
+Use external monitoring for public liveness and authenticated readiness (store monitoring bearer secrets privately). Alert on repeated 503/5xx, function timeouts, Render OOM/restarts and elevated latency. Inspect job status/event counts, oldest due/expired lease, retry_wait/failed growth, stale municipal conditions (>30 min), expired annotated-video backlog, Supabase Auth 429/delivery failures, DB connection pressure and COROS quota deferrals. Check providers' spend dashboards and set budget alerts before launch. Never log Authorization, DSNs, sealed-token material, video bytes, precise tracks or exported accounts. Request/deploy IDs and aggregate status counts are sufficient for initial operations.

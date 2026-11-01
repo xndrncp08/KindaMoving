@@ -4,6 +4,13 @@ export function zonedToUtc(naive: string, zone: string) {
     naive.replace(' ', 'T').replace(/(\.\d+)?Z?$/, '') + 'Z',
   );
   if (Number.isNaN(asUtc)) return null;
+  // Alberta's permanent UTC-6 starts November 2026. Keep historical dates on IANA.
+  // This narrow compatibility path supports older Node/browser ICU databases.
+  if (
+    ['America/Edmonton', 'Canada/Mountain'].includes(zone) &&
+    asUtc >= Date.UTC(2026, 10, 1)
+  )
+    return new Date(asUtc + 6 * 3600000);
   const offset = (t: number) => {
     const parts = Object.fromEntries(
       new Intl.DateTimeFormat('en-US', {

@@ -77,3 +77,17 @@ Local web app + local analytics service against hosted Supabase (`yqzbsuandpdlvg
 2. MapLibre's worker URL broke under bundling, so **no map had ever rendered**; the worker is now served from `/public`.
 3. Ghost matching never re-acquired a ghost that turned around early (52 % matched); recovery search added, and skipped route sections are now disclosed.
 4. The plan generator prescribed 14 km/week to a 3.3 km/week runner; weekly sessions now sum to the target.
+
+## Phase 3 checks (supersedes prior deployment-readiness evidence)
+
+- `npm run check`: includes production configuration, CSP directives, Alberta November/winter/historical DST conversions, redirect refusal, scheduler authentication, retryable cleanup and observable feed failures.
+- `PW_PRODUCTION=1 npm run test:e2e` after building: tests the actual production-mode nonce policy, hydration/theme, parser-inserted untrusted script blocking and a real MapLibre module/worker rendering a GeoJSON source. The map test uses a deterministic blank style; external tile/provider availability still needs deployed acceptance. CI runs this production-mode browser suite with no live project credentials.
+- `services/analytics/.venv/bin/python -m pytest -q services/analytics/tests`: validates startup failures, redacted readiness/cache, historical/current timezone handling and safe import admission. Live PostGIS tests run separately through the disposable harness.
+- `python3 scripts/test-database.py --then "services/analytics/.venv/bin/python -m pytest -q services/analytics/tests/test_network_db.py"`: includes the new reader privilege SQL assertions plus real Calgary graph round trip, explicit replacement and cross-region overwrite refusal. Use full PostGIS; the legacy `--without-postgis` option is not a substitute for the Phase 2/3 spatial suites.
+- `python3 scripts/validate-deployment.py`: static checks for the Pro cron/function budget configuration and authentication guards. The Render Blueprint was additionally validated against the current official JSON schema; this does not create resources or replace authenticated provider validation.
+- `scripts/check-timezones.py`: explicit read-only native database acceptance, separate from the JS/Python compatibility fallback. Supply a private `NETWORK_DATABASE_URL`; do not infer hosted tzdata from PostgreSQL major/minor or a local pass.
+- `scripts/smoke-production.py`: protected workflow/manual, read-only liveness/CSP, unauthorized scheduler/analytics denial and authenticated dependency readiness. Target URLs are trusted environment variables, not PR/user-dispatch input. It never schedules jobs, imports or deletes data. Run against actual deployment URLs before promotion.
+
+Final local/CI counts and external blockers are recorded in [PHASE3_HANDOFF](PHASE3_HANDOFF.md). Two existing React Hook Form compiler warnings and the FastAPI/Starlette httpx deprecation warning remain unrelated to this change.
+
+`python scripts/check-analytics-package.py` builds a non-editable analytics wheel in a temporary directory and asserts the routing/readiness modules are included. CI runs it because editable installs/source-directory execution can mask omitted Python subpackages. The previously omitted routing subpackage was reproduced in a built wheel, then corrected through setuptools package discovery.

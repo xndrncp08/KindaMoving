@@ -52,3 +52,7 @@ The caller's publishable-key client plus RLS is the default path. Identity is ch
 - **Cross-module synchronisation**: a job's success invalidates the modules it affects (`jobEffects`). Conditions reports or votes invalidate the shared `conditions` prefix, so overlays and route suitability refresh. Workout changes invalidate training and workouts. Gear writes invalidate gear, summary and activities. Stale and out-of-order responses are neutralised by key-scoped queries, aborted superseded requests (route snapping) and `updated_at`-guarded transition detection.
 
 Module docs: [ACTIVITY_PROCESSING](ACTIVITY_PROCESSING.md), [RUNNING_METRICS](RUNNING_METRICS.md), [ANALYTICS](ANALYTICS.md), [COROS_INTEGRATION](COROS_INTEGRATION.md), [ROUTING](ROUTING.md), [CONDITIONS](CONDITIONS.md), [TRAINING](TRAINING.md), [GHOST](GHOST.md), [GEAR](GEAR.md), [FORM](FORM.md), [STATE_MANAGEMENT](STATE_MANAGEMENT.md), [SECURITY](SECURITY.md), [PERFORMANCE](PERFORMANCE.md), [DEPLOYMENT](DEPLOYMENT.md).
+
+## Phase 3 deployment boundary
+
+Vercel/Render configurations and readiness gates wrap the existing runtimes. No new application layer or state system was introduced. HTML now renders dynamically for nonce CSP; heavy client modules remain lazy. See [deployment](DEPLOYMENT.md) for scheduling, security headers, hosting budgets and rollback.

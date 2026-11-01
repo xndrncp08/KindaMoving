@@ -25,8 +25,11 @@ async function weatherSince(
   if (!hit || Date.now() - hit.at > 1800000) {
     let hourly: Hourly | null = null;
     try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(1)}&longitude=${lon.toFixed(1)}&hourly=temperature_2m,precipitation,snowfall&past_days=3&forecast_days=1&timezone=GMT`;
-      const r = await fetch(url, {
+      const url = `${process.env.OPEN_METEO_API_KEY ? 'https://customer-api.open-meteo.com' : 'https://api.open-meteo.com'}/v1/forecast?latitude=${lat.toFixed(1)}&longitude=${lon.toFixed(1)}&hourly=temperature_2m,precipitation,snowfall&past_days=3&forecast_days=1&timezone=GMT`;
+      const weatherUrl = new URL(url);
+      if (process.env.OPEN_METEO_API_KEY)
+        weatherUrl.searchParams.set('apikey', process.env.OPEN_METEO_API_KEY);
+      const r = await fetch(weatherUrl, {
         signal: AbortSignal.timeout(6000),
         cache: 'no-store',
       });

@@ -9,7 +9,7 @@
 ```sh
 # operator, once per region (admin connection string)
 services/analytics/.venv/bin/python services/analytics/scripts/import_network.py \
-  --region calgary --bbox -114.13,51.035,-114.03,51.070 --elevation open-meteo \
+  --region calgary --bbox=-114.13,51.035,-114.03,51.070 --elevation open-meteo \
   --from-file reviewed-calgary.json
 # Dry-run is the default. After review, set NETWORK_ADMIN_DATABASE_URL securely and add --apply.
 # Replacing existing Calgary data also requires explicit --replace-existing approval.

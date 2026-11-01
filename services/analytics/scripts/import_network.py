@@ -1,6 +1,6 @@
 """Import a runnable network region from OpenStreetMap into PostGIS.
 
-    python scripts/import_network.py --region calgary --bbox -114.13,51.035,-114.03,51.070 \
+    python scripts/import_network.py --region calgary --bbox=-114.13,51.035,-114.03,51.070 \
         [--elevation open-meteo] [--from-file extract.json] [--apply] [--replace-existing]
 
 Default: validate/dry-run. Writes use NETWORK_ADMIN_DATABASE_URL from the environment.

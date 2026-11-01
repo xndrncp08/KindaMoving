@@ -17,6 +17,13 @@ export async function proxy(request: NextRequest) {
   response.headers.set('Content-Security-Policy', csp);
   if (
     !configured() ||
+    [
+      '/api/healthz',
+      '/api/readyz',
+      '/api/jobs/run',
+      '/api/conditions/official',
+      '/api/form/cleanup',
+    ].includes(request.nextUrl.pathname) ||
     !/^\/(app|onboarding|api|auth|login)(?:\/|$)/.test(request.nextUrl.pathname)
   )
     return response;

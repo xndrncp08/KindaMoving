@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 const config: NextConfig = {
   transpilePackages: ['@km/ui', '@km/types'],
+  devIndicators: false, // the dev badge sits over the mobile tab bar
   experimental: { proxyClientMaxBodySize: '6mb' },
   async headers() {
     return [

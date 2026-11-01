@@ -6,7 +6,7 @@ import {
   shoeSchema,
   workoutSchema,
 } from '@km/types';
-import { pace, duration, distance, shoeMileage } from '@/lib/metrics';
+import { pace, duration, distance, shoeMileage, span } from '@/lib/metrics';
 import { validateUpload, MAX_FILE_BYTES } from '@/lib/ingestion';
 import { safeNext } from '@/lib/env';
 import {
@@ -96,6 +96,8 @@ describe('basic metrics', () => {
   });
   it('formats rounded seconds and display units', () => {
     expect(duration(359.8)).toBe('6:00');
+    expect(duration(4777)).toBe('1:19:37');
+    expect(span(4777)).toBe('1 h 20 min');
     expect(distance(1609.344, 'imperial')).toBe('1.00 mi');
   });
   it('adds only assigned activity mileage to existing wear', () =>

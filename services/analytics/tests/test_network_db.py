@@ -64,3 +64,25 @@ def test_waypoint_editing_snaps_to_network(loaded):
     out = route_waypoints(g, [{"lat": 51.0532, "lon": -114.0727}, {"lat": 51.0540, "lon": -114.0650}, {"lat": 51.0532, "lon": -114.0727}], RouteRequest(*START, distance_m=1000))
     assert out["status"] == "ok"
     assert validate(g, out["geometry"]["coordinates"])["network_coverage"] == 1.0
+
+
+def test_replacement_requires_opt_in_and_keeps_original(loaded):
+    g, counts, _ = loaded
+    with pytest.raises(ValueError, match="Region exists"):
+        network.store(g, "calgary-test", (-114.13,51.035,-114.03,51.070), DSN, None)
+    import psycopg
+    with psycopg.connect(DSN) as conn:
+        assert conn.execute("select count(*) from network_edges where region='calgary-test'").fetchone()[0] == counts['edges']
+
+
+def test_explicit_replacement_and_cross_region_protection(loaded):
+    g, counts, _ = loaded
+    assert network.store(g, 'calgary-test', (-114.13,51.035,-114.03,51.070), DSN, None, replace_existing=True)['edges']==counts['edges']
+    with pytest.raises(ValueError,match='overlap'):
+        network.store(g, 'another-region', (-114.13,51.035,-114.03,51.070), DSN, None)
+
+
+def test_readiness_rejects_an_administrative_connection(loaded,monkeypatch):
+    from km_analytics.deployment import network_ready
+    monkeypatch.setenv('NETWORK_DATABASE_URL',DSN)
+    assert network_ready() is False

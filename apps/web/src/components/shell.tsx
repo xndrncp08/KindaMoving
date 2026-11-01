@@ -126,7 +126,9 @@ export function Shell({
           {items.map(link)}
         </div>
       ))}
-      <div className="nav-group">{link(['/app/settings', 'Settings', Settings])}</div>
+      <div className="nav-group">
+        {link(['/app/settings', 'Settings', Settings])}
+      </div>
     </nav>
   );
   const toggleTheme = () =>

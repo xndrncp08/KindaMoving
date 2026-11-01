@@ -238,8 +238,7 @@ export function Dashboard({ userId }: { userId: string }) {
             <>
               <h2>Nothing scheduled</h2>
               <p className="muted">
-                Build a plan around your race distance or add a single
-                workout.
+                Build a plan around your race distance or add a single workout.
               </p>
               <Button asChild variant="outline">
                 <Link href="/app/training/plan">Build a Plan</Link>

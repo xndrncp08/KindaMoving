@@ -33,3 +33,7 @@ Local verification: 129 Vitest tests passed, 2 live-service tests skipped; 86 Py
 7. Set monitoring/spend alerts, test backup restoration, record rollback deployment IDs and complete operator/support/retention/legal details. Exercise non-destructive smoke after rollback. Document final URLs/SHAs and measured acceptance results here.
 
 Remaining blockers are external configuration, native database acceptance, real service capacity, and end-to-end acceptance—not implemented provider success. See DEPLOYMENT.md for release/rollback/monitoring and PRODUCTION_REQUIREMENTS.md for credentials, costs and quotas.
+
+## Verified release implementation
+
+All three GitHub Actions jobs (web, analytics including the non-editable deployment wheel, database/PostGIS) passed for implementation commit `979f54c` in [run 41291149710](https://github.com/xndrncp08/KindaMoving/actions/runs/41291149710). The subsequent release-evidence commit changes this document only. This CI result does not claim Vercel/Render deployment or live Supabase acceptance.

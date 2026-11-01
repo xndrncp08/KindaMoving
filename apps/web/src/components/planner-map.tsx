@@ -5,6 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapContainer } from '@km/ui';
 import { useMap } from '@/lib/stores';
 import { bounds } from '@/lib/geo';
+import { MapLegend, mapColor } from './map-legend';
 
 export interface MapPoint {
   lat: number;
@@ -26,16 +27,12 @@ interface Props {
   onPick?: (lat: number, lon: number) => void;
   fitKey?: string;
   label?: string;
+  /** Workspaces render their own legend beside the map. */
+  legend?: boolean;
+  /** Keeps fitted routes clear of panels floating over the map. */
+  fitPadding?: maplibregl.PaddingOptions | number;
 }
-const color: Record<MapPoint['kind'], string> = {
-  start: '#111827',
-  waypoint: '#2563eb',
-  major: '#dc2626',
-  minor: '#f59e0b',
-  hazard: '#7c3aed',
-  ghost: '#94a3b8',
-  runner: '#16a34a',
-};
+const color: Record<MapPoint['kind'], string> = mapColor;
 const empty = { type: 'FeatureCollection' as const, features: [] };
 
 /**
@@ -50,6 +47,8 @@ export default function PlannerMap({
   onPick,
   fitKey,
   label = 'Route map',
+  legend = true,
+  fitPadding = 40,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
@@ -88,26 +87,36 @@ export default function PlannerMap({
         id: 'others',
         type: 'line',
         source: 'others',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': '#94a3b8',
+          'line-color': mapColor.other,
           'line-width': 3,
-          'line-opacity': 0.7,
+          'line-opacity': 0.75,
+          'line-dasharray': [2, 1.5],
         },
+      });
+      m.addLayer({
+        id: 'selected-casing',
+        type: 'line',
+        source: 'selected',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': mapColor.casing, 'line-width': 8 },
       });
       m.addLayer({
         id: 'selected',
         type: 'line',
         source: 'selected',
-        paint: { 'line-color': '#4d7c0f', 'line-width': 5 },
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+        paint: { 'line-color': mapColor.route, 'line-width': 4 },
       });
       m.addLayer({
         id: 'highlight',
         type: 'line',
         source: 'highlight',
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
         paint: {
-          'line-color': '#ea580c',
-          'line-width': 7,
-          'line-opacity': 0.85,
+          'line-color': mapColor.highlight,
+          'line-width': 4,
         },
       });
       m.addLayer({
@@ -115,7 +124,7 @@ export default function PlannerMap({
         type: 'circle',
         source: 'points',
         paint: {
-          'circle-radius': 6,
+          'circle-radius': ['case', ['==', ['get', 'kind'], 'start'], 8, 6],
           'circle-color': ['get', 'color'],
           'circle-stroke-color': '#fff',
           'circle-stroke-width': 2,
@@ -156,7 +165,7 @@ export default function PlannerMap({
       type: 'FeatureCollection',
       features: points.map((p) => ({
         type: 'Feature',
-        properties: { color: color[p.kind] },
+        properties: { color: color[p.kind], kind: p.kind },
         geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
       })),
     });
@@ -168,7 +177,11 @@ export default function PlannerMap({
     if (!ready || !m || !fitKey) return;
     if (target?.coordinates.length) {
       const [w, s, e, n] = bounds(target.coordinates);
-      m.fitBounds([w, s, e, n], { padding: 40, maxZoom: 16, animate: false });
+      m.fitBounds([w, s, e, n], {
+        padding: fitPadding,
+        maxZoom: 16,
+        animate: false,
+      });
     } else if (points[0])
       m.jumpTo({
         center: [points[0].lon, points[0].lat],
@@ -183,30 +196,12 @@ export default function PlannerMap({
       <MapContainer>
         <div ref={ref} role="region" aria-label={label} />
       </MapContainer>
-      {error && <p role="alert">{error}</p>}
-      <p className="legend">
-        <span>
-          <i style={{ background: '#4d7c0f' }} />
-          Route
-        </span>
-        <span>
-          <i style={{ background: '#ea580c' }} />
-          Tempo / highlight
-        </span>
-        <span>
-          <i style={{ background: color.major }} />
-          Major crossing
-        </span>
-        <span>
-          <i style={{ background: color.minor }} />
-          Minor crossing
-        </span>
-        <span>
-          <i style={{ background: color.hazard }} />
-          Reported condition
-        </span>
-        <span>Map © OpenStreetMap contributors (ODbL) · tiles OpenFreeMap</span>
-      </p>
+      {error && (
+        <p role="alert" className="map-error">
+          {error}
+        </p>
+      )}
+      {legend && <MapLegend />}
     </>
   );
 }

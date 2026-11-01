@@ -157,7 +157,7 @@ export function GhostReplay({
               { lon: frame.ref[0], lat: frame.ref[1], kind: 'runner' },
             ]}
             fitKey={`${a}-${b}`}
-            label="Ghost replay map: green is you, grey is your ghost."
+            label="Ghost replay map: the dark dot is you, the grey dot is your ghost."
           />
           <Card>
             <div className="row">

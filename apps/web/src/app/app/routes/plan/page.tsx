@@ -1,19 +1,13 @@
 import { requireUser } from '@/lib/session';
 import { RoutePlanner } from '@/components/route-planner';
+export const metadata = { title: 'Plan a Route' };
 export default async function Page() {
   const { user } = await requireUser();
   return (
-    <div className="stack">
-      <header className="page-head">
-        <p className="eyebrow">KM Routes</p>
-        <h1 className="page-title">Plan a route for the workout.</h1>
-        <p className="muted">
-          Routes come only from mapped runnable ways (OpenStreetMap). Crossings,
-          climbing and reported conditions are counted and explained, never
-          assumed away.
-        </p>
-      </header>
+    <>
+      {/* Map-first workspace: the heading names the page for assistive tech. */}
+      <h1 className="sr-only">Plan a route</h1>
       <RoutePlanner userId={user.id} />
-    </div>
+    </>
   );
 }

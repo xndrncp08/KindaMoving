@@ -1240,8 +1240,8 @@ footer {
     align-items: center;
     justify-content: space-between;
     gap: var(--s-3);
-    padding: var(--s-2) max(var(--s-4), env(safe-area-inset-right))
-      var(--s-2) max(var(--s-4), env(safe-area-inset-left));
+    padding: var(--s-2) max(var(--s-4), env(safe-area-inset-right)) var(--s-2)
+      max(var(--s-4), env(safe-area-inset-left));
     padding-top: max(var(--s-2), env(safe-area-inset-top));
     border-bottom: 1px solid var(--line);
     position: sticky;
@@ -1542,5 +1542,173 @@ footer {
   }
   .week-head {
     gap: var(--s-4);
+  }
+}
+
+/* ───────────────────────── Map workspace (KM Routes) ───────────────────────── */
+.main:has(> .workspace) {
+  max-width: none;
+  padding: 0;
+}
+.workspace {
+  position: relative;
+  height: 100dvh;
+  overflow: hidden;
+  isolation: isolate;
+}
+.workspace-map,
+.workspace-map .map-container {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+}
+.workspace-panel {
+  position: absolute;
+  z-index: 2;
+  top: var(--s-4);
+  left: var(--s-4);
+  bottom: var(--s-4);
+  width: min(400px, calc(100% - 2rem));
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-float);
+  overflow: hidden;
+}
+.workspace-panel[data-open='false'] {
+  bottom: auto;
+}
+.panel-handle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  width: 100%;
+  min-height: 60px;
+  padding: var(--s-3) var(--s-4);
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  text-align: left;
+}
+.panel-handle > span {
+  display: grid;
+}
+.panel-handle .eyebrow {
+  margin: 0;
+}
+.panel-title {
+  font-weight: 700;
+  font-stretch: 110%;
+  font-size: var(--text-md);
+}
+.panel-body {
+  padding: var(--s-4);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: grid;
+  gap: var(--s-4);
+  align-content: start;
+  flex: 1;
+}
+.panel-body[hidden] {
+  display: none;
+}
+.panel-legend {
+  padding-top: var(--s-2);
+  border-top: 1px solid var(--line);
+}
+.stack.tight {
+  gap: 0;
+}
+.reasons {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: var(--text-sm);
+  display: grid;
+  gap: var(--s-1);
+}
+.candidates .segmented {
+  margin: 0;
+  display: flex;
+}
+.candidates .segmented button {
+  flex: 1;
+}
+.map-tools {
+  position: absolute;
+  z-index: 2;
+  top: var(--s-4);
+  right: 56px;
+  display: flex;
+  gap: var(--s-2);
+  align-items: center;
+}
+.map-tools .button-outline,
+.chip-toggle {
+  box-shadow: var(--shadow-float);
+}
+.chip-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  min-height: 44px;
+  padding: 0 var(--s-3);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+.map-error {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: var(--s-4);
+  transform: translateX(-50%);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: var(--s-2) var(--s-4);
+  border-radius: var(--r-md);
+}
+@media (max-width: 720px) {
+  .workspace {
+    height: calc(100dvh - 61px - var(--tabbar) - var(--safe-b));
+  }
+  /* Bottom sheet: the map stays visible above it */
+  .workspace-panel,
+  .workspace-panel[data-open='false'] {
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-height: 62%;
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    border-bottom: 0;
+  }
+  .panel-handle::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 50%;
+    width: 36px;
+    height: 4px;
+    margin-left: -18px;
+    border-radius: 2px;
+    background: var(--line-strong);
+  }
+  .panel-handle {
+    position: relative;
+    padding-top: var(--s-4);
+  }
+  .map-tools {
+    top: var(--s-3);
+    left: var(--s-3);
+    right: auto;
   }
 }

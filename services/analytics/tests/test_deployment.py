@@ -90,3 +90,17 @@ def test_ready_success_is_cached(monkeypatch):
         assert client.get('/readyz').status_code==200
     assert len(calls)==1
     api._readiness['at']=0
+
+
+def test_import_cli_dry_run_does_not_use_writer_credentials(tmp_path):
+    import gzip
+    import subprocess
+    import sys
+    import os
+    source=Path(__file__).parent/'data/calgary_eau_claire.json.gz'
+    document=json.loads(gzip.decompress(source.read_bytes()))
+    extract=tmp_path/'calgary.json'
+    extract.write_text(json.dumps({'elements':document['elements']}))
+    result=subprocess.run([sys.executable,str(Path(module.__file__)),'--region','calgary','--bbox=-114.13,51.035,-114.03,51.070','--from-file',str(extract)],env={**os.environ,'NETWORK_ADMIN_DATABASE_URL':'invalid-must-never-be-used'},capture_output=True,text=True)
+    assert result.returncode==0,result.stderr
+    assert json.loads(result.stdout)['apply'] is False

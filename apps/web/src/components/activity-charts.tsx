@@ -12,40 +12,81 @@ import {
 } from 'recharts';
 import type { ChartPoint } from '@/lib/streams';
 import { duration } from '@/lib/metrics';
-const axis = { fontSize: 12, fill: 'var(--muted)' };
-export default function ActivityCharts({ points }: { points: ChartPoint[] }) {
+const axis = { fontSize: 11, fill: 'var(--muted)' };
+const km = (v: unknown) => `${Number(v).toFixed(2)} km`;
+/**
+ * Pace, heart rate and elevation share one distance axis and one crosshair
+ * (Recharts syncId); the hovered sample is reported so the map can follow.
+ */
+export default function ActivityCharts({
+  points,
+  imperial = false,
+  onCursor,
+}: {
+  points: ChartPoint[];
+  imperial?: boolean;
+  onCursor?: (p: ChartPoint | null) => void;
+}) {
   const hasHr = points.some((p) => p.hr);
   const hasEle = points.some((p) => p.ele !== null);
+  const factor = imperial ? 1.609344 : 1;
+  const unit = imperial ? ' /mi' : ' /km';
+  const events = {
+    syncId: 'run',
+    syncMethod: 'value' as const,
+    margin: { left: 4, right: 12, top: 8, bottom: 0 },
+    onMouseMove: (s: { activeTooltipIndex?: number | string | null }) =>
+      onCursor?.(
+        s.activeTooltipIndex == null
+          ? null
+          : (points[Number(s.activeTooltipIndex)] ?? null),
+      ),
+    onMouseLeave: () => onCursor?.(null),
+  };
+  const x = (
+    <XAxis
+      dataKey="km"
+      type="number"
+      domain={['dataMin', 'dataMax']}
+      tick={axis}
+      tickFormatter={(v) => `${v}`}
+      unit=" km"
+      tickLine={false}
+      axisLine={{ stroke: 'var(--line)' }}
+    />
+  );
+  const grid = <CartesianGrid vertical={false} stroke="var(--line)" />;
+  const cursor = { stroke: 'var(--ink)', strokeWidth: 1 };
   return (
-    <div className="stack">
-      <figure aria-label="Pace over distance">
-        <figcaption className="eyebrow">Pace (30 s window)</figcaption>
-        <ResponsiveContainer width="100%" height={180}>
-          <LineChart data={points} margin={{ left: 8, right: 8 }}>
-            <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-            <XAxis
-              dataKey="km"
-              type="number"
-              domain={['dataMin', 'dataMax']}
-              tick={axis}
-              unit=" km"
-            />
+    <div className="streams">
+      <figure>
+        <figcaption>
+          <span className="eyebrow">Pace</span>
+          <span className="prov prov-measured">30 s moving window</span>
+        </figcaption>
+        <ResponsiveContainer width="100%" height={170}>
+          <LineChart data={points} {...events}>
+            {grid}
+            {x}
             <YAxis
               reversed
               tick={axis}
-              tickFormatter={(v) => duration(v)}
-              width={48}
+              tickFormatter={(v) => duration(v * factor)}
+              width={44}
               domain={['auto', 'auto']}
+              tickLine={false}
+              axisLine={false}
             />
             <Tooltip
-              formatter={(v) => duration(Number(v)) + ' /km'}
-              labelFormatter={(v) => v + ' km'}
+              cursor={cursor}
+              formatter={(v) => [duration(Number(v) * factor) + unit, 'Pace']}
+              labelFormatter={km}
             />
             <Line
               dataKey="pace"
               dot={false}
-              stroke="var(--accent-strong, #6d871b)"
-              strokeWidth={1.5}
+              stroke="var(--series-pace)"
+              strokeWidth={1.75}
               connectNulls={false}
               isAnimationActive={false}
             />
@@ -53,30 +94,32 @@ export default function ActivityCharts({ points }: { points: ChartPoint[] }) {
         </ResponsiveContainer>
       </figure>
       {hasHr && (
-        <figure aria-label="Heart rate over distance">
-          <figcaption className="eyebrow">Heart rate</figcaption>
-          <ResponsiveContainer width="100%" height={140}>
-            <LineChart data={points} margin={{ left: 8, right: 8 }}>
-              <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-              <XAxis
-                dataKey="km"
-                type="number"
-                domain={['dataMin', 'dataMax']}
-                tick={axis}
-                unit=" km"
-              />
+        <figure>
+          <figcaption>
+            <span className="eyebrow">Heart rate (bpm)</span>
+            <span className="prov prov-measured">Sensor</span>
+          </figcaption>
+          <ResponsiveContainer width="100%" height={130}>
+            <LineChart data={points} {...events}>
+              {grid}
+              {x}
               <YAxis
                 tick={axis}
-                width={48}
+                width={44}
                 domain={['auto', 'auto']}
-                unit=" bpm"
+                tickLine={false}
+                axisLine={false}
               />
-              <Tooltip labelFormatter={(v) => v + ' km'} />
+              <Tooltip
+                cursor={cursor}
+                formatter={(v) => [`${v} bpm`, 'Heart rate']}
+                labelFormatter={km}
+              />
               <Line
                 dataKey="hr"
                 dot={false}
-                stroke="#c2410c"
-                strokeWidth={1.5}
+                stroke="var(--series-hr)"
+                strokeWidth={1.75}
                 isAnimationActive={false}
               />
             </LineChart>
@@ -84,29 +127,32 @@ export default function ActivityCharts({ points }: { points: ChartPoint[] }) {
         </figure>
       )}
       {hasEle && (
-        <figure aria-label="Elevation over distance">
-          <figcaption className="eyebrow">Elevation (smoothed)</figcaption>
-          <ResponsiveContainer width="100%" height={120}>
-            <AreaChart data={points} margin={{ left: 8, right: 8 }}>
-              <XAxis
-                dataKey="km"
-                type="number"
-                domain={['dataMin', 'dataMax']}
-                tick={axis}
-                unit=" km"
-              />
+        <figure>
+          <figcaption>
+            <span className="eyebrow">Elevation (m)</span>
+            <span className="prov prov-measured">Smoothed</span>
+          </figcaption>
+          <ResponsiveContainer width="100%" height={110}>
+            <AreaChart data={points} {...events}>
+              {grid}
+              {x}
               <YAxis
                 tick={axis}
-                width={48}
+                width={44}
                 domain={['auto', 'auto']}
-                unit=" m"
+                tickLine={false}
+                axisLine={false}
               />
-              <Tooltip labelFormatter={(v) => v + ' km'} />
+              <Tooltip
+                cursor={cursor}
+                formatter={(v) => [`${Math.round(Number(v))} m`, 'Elevation']}
+                labelFormatter={km}
+              />
               <Area
                 dataKey="ele"
-                stroke="#64748b"
-                fill="#94a3b8"
-                fillOpacity={0.3}
+                stroke="var(--series-terrain)"
+                fill="var(--series-terrain)"
+                fillOpacity={0.25}
                 isAnimationActive={false}
               />
             </AreaChart>

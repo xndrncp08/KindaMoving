@@ -6,7 +6,14 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import { Button, Card, ErrorState, Input, Skeleton } from '@km/ui';
+import {
+  Button,
+  Card,
+  ErrorState,
+  Input,
+  Skeleton,
+  ConfirmButton,
+} from '@km/ui';
 import { api, conditionsQuery, keys } from '@/lib/queries';
 import { KINDS, type Assessment } from '@/lib/conditions';
 import { useMap } from '@/lib/stores';
@@ -99,13 +106,15 @@ export function AssessmentCard({
       {!a.official && (
         <div className="row">
           {a.own ? (
-            <Button
-              variant="ghost"
+            <ConfirmButton
               disabled={remove.isPending}
-              onClick={() => confirm('Delete your report?') && remove.mutate()}
+              title="Delete your report?"
+              description="Other runners will no longer see it, and its votes are removed."
+              confirmLabel="Delete Report"
+              onConfirm={() => remove.mutate()}
             >
-              Delete my report
-            </Button>
+              Delete My Report
+            </ConfirmButton>
           ) : (
             <>
               <Button
@@ -267,6 +276,7 @@ export function ConditionsView({ userId }: { userId: string }) {
         onPick={(lat, lon) => setPin({ lat, lon })}
         fitKey={undefined}
         label="Conditions map. Tap to place a report."
+        legend={['hazard', 'start']}
       />
     </div>
   );

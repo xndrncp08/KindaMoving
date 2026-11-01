@@ -4,6 +4,8 @@ export interface ChartPoint {
   pace: number | null; // s/km over the trailing window
   hr: number | null;
   ele: number | null;
+  lat: number | null;
+  lon: number | null;
 }
 /**
  * Chart series from processed streams. Pace is distance-over-time across a
@@ -31,6 +33,8 @@ export function chartSeries(
       pace: pace !== null && pace < 1800 ? Math.round(pace) : null,
       hr: s.hr[i],
       ele: s.ele[i],
+      lat: s.lat[i],
+      lon: s.lon[i],
     });
   }
   return out;

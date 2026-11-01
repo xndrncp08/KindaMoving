@@ -132,9 +132,15 @@ it('opens and closes accessible mobile navigation', async () => {
       <h1>Activities</h1>
     </Shell>,
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }));
+  const tabs = screen.getByRole('navigation', { name: 'Primary' });
+  expect(tabs.textContent).toContain('Training');
+  const more = screen.getByRole('button', { name: 'More' });
+  expect(more.getAttribute('aria-expanded')).toBe('false');
+  fireEvent.click(more);
   const dialog = await screen.findByRole('dialog');
-  expect(dialog.textContent).toContain('Gear');
+  // Same goal groups as the desktop rail.
+  for (const text of ['Review', 'Plan', 'Equip', 'Gear', 'Trends'])
+    expect(dialog.textContent).toContain(text);
   fireEvent.click(screen.getByRole('button', { name: 'Close' }));
   await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull());
 });

@@ -30,8 +30,8 @@ export function UploadForm({ userId }: { userId: string }) {
     .filter((j) => j.kind === 'activity_import')
     .slice(0, 5);
   return (
-    <Card>
-      <h2>Bring your file.</h2>
+    <Card id="import" style={{ scrollMarginTop: '5rem' }}>
+      <h2>Import a Run</h2>
       <p className="muted">
         GPX or FIT up to 4 MiB. Files are processed in the background: GPS
         cleanup, moving time, splits, heart rate and elevation. Re-uploading the

@@ -3,14 +3,13 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, ArrowUpRight, Bookmark } from 'lucide-react';
+import { Plus, Bookmark, Pencil, Trash2 } from 'lucide-react';
 import type { Resource } from '@km/types';
 import {
   Button,
   Input,
   Dialog,
   Card,
-  DataTable,
   EmptyState,
   ErrorState,
   Skeleton,
@@ -24,17 +23,42 @@ import {
   useRecordMutation,
   summaryQuery,
 } from '@/lib/queries';
-import { distance, duration, pace } from '@/lib/metrics';
+import { day, distance, duration, pace } from '@/lib/metrics';
 import { RecordForm } from './record-form';
 import { useComparison, usePreferences, useInteraction } from '@/lib/stores';
 import { toast } from 'sonner';
 import { UploadForm } from './upload-form';
 const meta = {
-  activities: ['Activities', 'Every mile has a place.', 'activity'],
-  routes: ['Routes', 'Keep the good loops close.', 'route'],
-  shoes: ['Gear', 'A little sole searching.', 'pair of shoes'],
-  workouts: ['Training', 'Make room for your next run.', 'workout'],
+  activities: [
+    'Runs',
+    'Every run you have imported or logged, newest first.',
+    'activity',
+    'Review',
+  ],
+  routes: [
+    'Routes',
+    'Generated and saved routes on the mapped network.',
+    'route',
+    'Plan',
+  ],
+  shoes: [
+    'Gear',
+    'Shoes in rotation and the distance on each pair.',
+    'pair of shoes',
+    'Equip',
+  ],
+  workouts: [
+    'Training',
+    'Your week, your workouts and how they went.',
+    'workout',
+    'Plan',
+  ],
 } as const;
+const mondayOf = (d: Date) => {
+  const m = new Date(d);
+  m.setDate(m.getDate() - ((m.getDay() + 6) % 7));
+  return m.toLocaleDateString('en-CA');
+};
 const sourceLabel: Record<string, string> = {
   manual: 'Manual entry',
   file: 'Imported file',
@@ -49,9 +73,12 @@ const detailPath = {
 export function ResourcePage({
   name,
   userId,
+  intro,
 }: {
   name: Resource;
   userId: string;
+  /** Module-specific content shown between the page head and the list. */
+  intro?: React.ReactNode;
 }) {
   const query = useQuery(recordsQuery(userId, name));
   const summary = useQuery(summaryQuery(userId));
@@ -80,10 +107,10 @@ export function ResourcePage({
         queryKey: keys.resource(userId, 'saved-routes'),
       }),
   });
-  const [title, subtitle, singular] = meta[name];
+  const [title, subtitle, singular, group] = meta[name];
   const term = search.get('q') || '';
   const status = search.get('status') || 'all';
-  const week = search.get('week') || new Date().toLocaleDateString('en-CA');
+  const week = search.get('week') || mondayOf(new Date());
   const start = new Date(week + 'T12:00:00');
   const validWeek = Number.isNaN(start.getTime()) ? new Date() : start;
   function filter(key: string, value: string) {
@@ -105,7 +132,7 @@ export function ResourcePage({
     <div className="stack">
       <header className="page-head row between">
         <div>
-          <p className="eyebrow">Your running, together</p>
+          <p className="eyebrow">{group}</p>
           <h1 className="page-title">{title}</h1>
           <p className="muted">{subtitle}</p>
         </div>
@@ -121,18 +148,27 @@ export function ResourcePage({
               open('record');
             }}
           >
-            <Plus size={16} />
-            Add {singular}
+            <Plus size={16} aria-hidden="true" />
+            {name === 'activities' ? 'Log Manually' : `Add ${singular}`}
           </Button>
         </div>
       </header>
+      {intro}
+      {name === 'activities' && <UploadForm userId={userId} />}
       <div className="row">
         <label style={{ flex: 1 }}>
           Search {title.toLowerCase()}
           <Input
+            type="search"
+            name="q"
+            autoComplete="off"
             value={term}
             onChange={(e) => filter('q', e.target.value)}
-            placeholder="Find a familiar name…"
+            placeholder={
+              name === 'activities'
+                ? 'e.g. Running · Oct 23…'
+                : 'Search by name…'
+            }
           />
         </label>
         {name !== 'activities' && (
@@ -210,7 +246,7 @@ export function ResourcePage({
           {all.length >= 500 && (
             <p className="notice">
               Showing the 500 most recent records. Totals include all
-              activities. Pagination is a Phase 2 extension.
+              activities.
             </p>
           )}
           {records.length === 0 ? (
@@ -220,69 +256,101 @@ export function ResourcePage({
               Add your first {singular}. No heroic effort required.
             </EmptyState>
           ) : name === 'activities' ? (
-            <DataTable
-              headers={[
-                'Activity',
-                'Date',
-                'Distance',
-                'Time',
-                'Pace',
-                'Actions',
-              ]}
-            >
-              {records.map((r) => (
-                <tr key={String(r.id)}>
-                  <td>
-                    <Link href={'/app/activities/' + r.id}>
-                      {String(r.title)} <ArrowUpRight size={12} />
-                    </Link>
-                    {!compact && (
-                      <p className="muted">
-                        {sourceLabel[String(r.source ?? 'manual')]}
-                      </p>
-                    )}
-                  </td>
-                  <td>{String(r.started_at)}</td>
-                  <td>{distance(Number(r.distance_m), profile.data?.units)}</td>
-                  <td>{duration(Number(r.elapsed_s))}</td>
-                  <td>
-                    {duration(
-                      (pace(Number(r.distance_m), Number(r.elapsed_s)) || 0) *
-                        (profile.data?.units === 'imperial' ? 1.609344 : 1),
-                    )}{' '}
-                    /{profile.data?.units === 'imperial' ? 'mi' : 'km'}
-                  </td>
-                  <td>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={comparisons.includes(String(r.id))}
-                        onChange={() => toggle(String(r.id))}
-                      />
-                      Compare
-                    </label>
-                    <Button
-                      variant="ghost"
-                      onClick={() => {
-                        setEditing(r);
-                        open('record');
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      onClick={() => {
-                        setEditing(r);
-                        open('delete');
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </DataTable>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th className="hide-sm">Run</th>
+                    <th className="n">Distance</th>
+                    <th className="n hide-sm">Moving</th>
+                    <th className="n">Pace</th>
+                    <th className="hide-sm">Source</th>
+                    <th>
+                      <span className="sr-only">Actions</span>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {records.map((r) => {
+                    const time = Number(r.moving_s ?? r.elapsed_s);
+                    const imperial = profile.data?.units === 'imperial';
+                    const p = pace(Number(r.distance_m), time);
+                    return (
+                      <tr key={String(r.id)}>
+                        <td suppressHydrationWarning>
+                          <Link href={'/app/activities/' + r.id}>
+                            {day(String(r.started_at), {
+                              weekday: 'short',
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                            })}
+                          </Link>
+                        </td>
+                        <td className="truncate-cell hide-sm">
+                          {String(r.title)}
+                        </td>
+                        <td className="n">
+                          {distance(Number(r.distance_m), profile.data?.units)}
+                        </td>
+                        <td className="n hide-sm">{duration(time)}</td>
+                        <td className="n">
+                          {p
+                            ? `${duration(p * (imperial ? 1.609344 : 1))} /${imperial ? 'mi' : 'km'}`
+                            : '—'}
+                        </td>
+                        <td className="hide-sm">
+                          {!compact && (
+                            <span className="badge quiet">
+                              {sourceLabel[String(r.source ?? 'manual')]}
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <div className="row-actions">
+                            <label className="compare-toggle">
+                              <input
+                                type="checkbox"
+                                checked={comparisons.includes(String(r.id))}
+                                onChange={() => toggle(String(r.id))}
+                              />
+                              <span className="hide-sm">Compare</span>
+                              <span className="sr-only">
+                                {' '}
+                                {String(r.title)}
+                              </span>
+                            </label>
+                            <Button
+                              variant="ghost"
+                              className="button-icon"
+                              aria-label={`Edit ${String(r.title)}`}
+                              onClick={() => {
+                                setEditing(r);
+                                open('record');
+                              }}
+                            >
+                              <Pencil size={16} aria-hidden="true" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              className="button-icon danger-icon"
+                              aria-label={`Delete ${String(r.title)}`}
+                              onClick={() => {
+                                setEditing(r);
+                                open('delete');
+                              }}
+                            >
+                              <Trash2 size={16} aria-hidden="true" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           ) : (
             <div className="grid two">
               {records.map((r) => (
@@ -298,9 +366,9 @@ export function ResourcePage({
                           : 'Planned'
                         : 'Your route'}
                   </p>
-                  <h2 style={{ fontSize: 24 }}>
+                  <h2>
                     <Link href={'/app/' + detailPath[name] + '/' + r.id}>
-                      {String(r.title)} ↗
+                      {String(r.title)}
                     </Link>
                   </h2>
                   {name === 'shoes' ? (
@@ -324,7 +392,13 @@ export function ResourcePage({
                     </>
                   ) : (
                     <>
-                      <p>{String(r.scheduled_on)}</p>
+                      <p suppressHydrationWarning>
+                        {day(String(r.scheduled_on), {
+                          weekday: 'long',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </p>
                       <p className="muted">{String(r.description)}</p>
                     </>
                   )}
@@ -407,7 +481,6 @@ export function ResourcePage({
           </div>
         </Card>
       )}
-      {name === 'activities' && <UploadForm userId={userId} />}
       <Dialog
         title={editing ? 'Edit ' + singular : 'Add ' + singular}
         description="Stored privately in your account."

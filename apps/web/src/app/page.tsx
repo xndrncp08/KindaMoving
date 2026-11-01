@@ -140,27 +140,27 @@ export default function Home() {
               More endorphins.
             </h2>
             <p className="muted">
-              The essentials are here. Log a run, make a plan, track your shoes.
-              No algorithm telling you how to feel about a Tuesday.
+              Import a run, plan the week, track your shoes. No algorithm
+              telling you how to feel about a Tuesday.
             </p>
           </div>
           <div className="grid">
             {[
               [
                 Activity,
-                '01 / YOUR RUNNING, TOGETHER',
+                '01 / REVIEW',
                 'Every mile counts.',
-                'Manual activity logging, simple pace calculations, and a clear view of the work you put in.',
+                'Import GPX or FIT files, or log by hand. Splits, heart rate, elevation and a clear view of the work you put in.',
               ],
               [
                 CalendarDays,
-                '02 / A PLAN YOU CAN KEEP',
+                '02 / PLAN',
                 'Make room for running.',
-                'Build your week with straightforward workouts. Tick them off. Enjoy that tiny dopamine hit.',
+                'Build a race plan or a single workout. Completed runs are matched to the plan. Enjoy that tiny dopamine hit.',
               ],
               [
                 Footprints,
-                '03 / A LITTLE SOLE SEARCHING',
+                '03 / EQUIP',
                 'Know when they’ve had it.',
                 'Assign shoes to your runs and keep an honest mileage history. Nostalgia is not cushioning.',
               ],
@@ -170,7 +170,6 @@ export default function Home() {
                 <Icon className="feature-icon" size={30} />
                 <h3>{String(title)}</h3>
                 <p className="muted">{String(text)}</p>
-                <span className="badge">Available in Phase 1</span>
               </Card>
             ))}
           </div>
@@ -183,8 +182,8 @@ export default function Home() {
               of your kind of moving.
             </h2>
             <p className="muted">
-              Simple summaries today. Deeper, workout-aware analysis is on the
-              roadmap. These figures are examples, not your activity data.
+              Every number says whether it was measured, estimated or inferred.
+              These figures are examples, not your activity data.
             </p>
           </div>
           <div className="grid">
@@ -216,28 +215,26 @@ export default function Home() {
                 Fewer surprises.
               </h2>
               <p className="muted">
-                Keep route notes and save your own routes now. Interactive
-                mapping is ready for GPS geometry. Condition aggregation and
-                intelligent route scoring are coming in Phase 2.
+                Routes are generated only on mapped, runnable ways. Crossings,
+                climbing and recent runner reports are counted and explained,
+                never assumed away. Calgary is the pilot area.
               </p>
-              <span className="badge">
-                Route library available · scoring planned
-              </span>
+              <span className="badge quiet">Calgary pilot</span>
             </Card>
             <Card>
               <Watch className="feature-icon" />
-              <p className="eyebrow">Your watch, eventually connected</p>
+              <p className="eyebrow">Your watch</p>
               <h2>
                 COROS is on
                 <br />
                 the starting line.
               </h2>
               <p className="muted">
-                We’re laying the groundwork for COROS support. OAuth and
-                automatic synchronization are not available yet. Manual logging
-                works today.
+                Connect through COROS’s official sign-in. KindaMoving imports
+                your runs read-only, and sends a route or workout to your watch
+                only after you confirm it. File import works for every device.
               </p>
-              <span className="badge">Integration planned</span>
+              <span className="badge quiet">Official COROS sign-in</span>
             </Card>
           </div>
         </section>

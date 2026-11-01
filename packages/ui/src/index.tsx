@@ -37,19 +37,39 @@ export function Input(props: React.ComponentProps<'input'>) {
 export function Card(props: React.ComponentProps<'section'>) {
   return <section {...props} className={cn('card', props.className)} />;
 }
+export type ProvenanceKind = 'measured' | 'estimated' | 'inferred';
+const provenanceText: Record<ProvenanceKind, string> = {
+  measured: 'Measured',
+  estimated: 'Estimated',
+  inferred: 'Inferred',
+};
+/** How far a number can be trusted: recorded by a sensor, modelled, or deduced from context. */
+export function Provenance({ kind }: { kind: ProvenanceKind }) {
+  return <span className={`prov prov-${kind}`}>{provenanceText[kind]}</span>;
+}
 export function Metric({
   label,
   value,
+  unit,
   detail,
+  provenance,
 }: {
   label: string;
   value: React.ReactNode;
-  detail?: string;
+  unit?: string;
+  detail?: React.ReactNode;
+  provenance?: ProvenanceKind;
 }) {
   return (
     <Card>
-      <p className="eyebrow">{label}</p>
-      <p className="metric">{value}</p>
+      <div className="row between">
+        <p className="eyebrow">{label}</p>
+        {provenance && <Provenance kind={provenance} />}
+      </div>
+      <p className="metric">
+        {value}
+        {unit && <span className="unit">{unit}</span>}
+      </p>
       {detail && <p className="muted">{detail}</p>}
     </Card>
   );
@@ -120,6 +140,7 @@ export function Dialog({
   open,
   onOpenChange,
   drawer = false,
+  sheet = false,
 }: {
   title: string;
   description: string;
@@ -127,13 +148,15 @@ export function Dialog({
   open: boolean;
   onOpenChange: (value: boolean) => void;
   drawer?: boolean;
+  /** Bottom sheet (mobile). */
+  sheet?: boolean;
 }) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="overlay" />
         <DialogPrimitive.Content
-          className={drawer ? 'dialog drawer' : 'dialog'}
+          className={cn('dialog', drawer && 'drawer', sheet && 'sheet')}
         >
           <DialogPrimitive.Title>{title}</DialogPrimitive.Title>
           <DialogPrimitive.Description className="muted">
@@ -146,6 +169,53 @@ export function Dialog({
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>
+  );
+}
+/** In-app confirmation for destructive actions (replaces blocking window.confirm). */
+export function ConfirmButton({
+  children,
+  title,
+  description,
+  confirmLabel,
+  onConfirm,
+  disabled,
+  variant = 'ghost',
+}: {
+  children: React.ReactNode;
+  title: string;
+  description: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  disabled?: boolean;
+  variant?: VariantProps<typeof variants>['variant'];
+}) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <>
+      <Button
+        variant={variant}
+        disabled={disabled}
+        onClick={() => setOpen(true)}
+      >
+        {children}
+      </Button>
+      <Dialog
+        title={title}
+        description={description}
+        open={open}
+        onOpenChange={setOpen}
+      >
+        <Button
+          variant="destructive"
+          onClick={() => {
+            setOpen(false);
+            onConfirm();
+          }}
+        >
+          {confirmLabel}
+        </Button>
+      </Dialog>
+    </>
   );
 }
 export const Tabs = TabsPrimitive.Root;

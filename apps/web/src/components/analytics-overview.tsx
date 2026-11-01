@@ -2,9 +2,9 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Card, ErrorState, Skeleton, EmptyState } from '@km/ui';
+import { Card, ErrorState, Skeleton, EmptyState, Provenance } from '@km/ui';
 import { overviewQuery, profileQuery } from '@/lib/queries';
-import { distance, duration } from '@/lib/metrics';
+import { day, distance, duration, span } from '@/lib/metrics';
 const Weekly = dynamic(() => import('./weekly-chart'), {
   ssr: false,
   loading: () => <Skeleton />,
@@ -30,44 +30,72 @@ export function AnalyticsOverview({ userId }: { userId: string }) {
   const units = profile.data?.units;
   return (
     <div className="stack">
-      <div className="grid four">
-        <Card>
-          <p className="eyebrow">Last 7 days</p>
-          <p className="metric">{duration(o.load.last7_s)}</p>
-          <p className="muted">
-            vs {duration(o.load.weekly_avg28_s)} weekly average over 28 days
-          </p>
-        </Card>
-        <Card>
-          <p className="eyebrow">Load trend</p>
-          <p className="metric">
+      <dl className="instrument" aria-label="Training summary">
+        <div className="instrument-cell">
+          <dt>
+            <span className="eyebrow">Time on feet · 7 days</span>
+            <Provenance kind="measured" />
+          </dt>
+          <dd className="metric num">{span(o.load.last7_s)}</dd>
+          <dd className="muted">
+            vs {span(o.load.weekly_avg28_s)} weekly average (28 days)
+          </dd>
+        </div>
+        <div className="instrument-cell">
+          <dt>
+            <span className="eyebrow">Load trend</span>
+            <Provenance kind="measured" />
+          </dt>
+          <dd className="metric num">
             {o.load.ratio === null ? '—' : o.load.ratio.toFixed(2) + '×'}
-          </p>
-          <p className="muted">
-            7-day time relative to your 4-week average. A trend, not an injury
+          </dd>
+          <dd className="muted">
+            7-day time over your 4-week average. A trend, not an injury
             predictor.
-          </p>
-        </Card>
-        <Card>
-          <p className="eyebrow">Consistency</p>
-          <p className="metric">
+          </dd>
+        </div>
+        <div className="instrument-cell">
+          <dt>
+            <span className="eyebrow">Consistency</span>
+            <Provenance kind="measured" />
+          </dt>
+          <dd className="metric num">
             {o.consistency.active_weeks}/{o.consistency.of_weeks} weeks
-          </p>
-          <p className="muted">
-            {o.consistency.runs_per_week} runs/week ·{' '}
+          </dd>
+          <dd className="muted">
+            {o.consistency.runs_per_week} runs per week ·{' '}
             {o.consistency.current_streak_weeks}-week streak
-          </p>
-        </Card>
-        <Card>
-          <p className="eyebrow">Highest recorded HR</p>
-          <p className="metric">{o.hr_max_estimate ?? '—'}</p>
-          <p className="muted">
-            Used as max HR for zone load. A lab or field test is more accurate.
-          </p>
-        </Card>
-      </div>
+          </dd>
+        </div>
+        <div className="instrument-cell">
+          <dt>
+            <span className="eyebrow">Max heart rate</span>
+            <Provenance kind="estimated" />
+          </dt>
+          <dd className="metric num">
+            {o.hr_max_estimate ? `${o.hr_max_estimate} bpm` : '—'}
+          </dd>
+          <dd className="muted">
+            Highest recorded value, used for zone load. A lab or field test is
+            more accurate.
+          </dd>
+        </div>
+      </dl>
       <Card>
-        <h2>Weekly volume</h2>
+        <div className="row between">
+          <h2>Weekly volume</h2>
+          <p className="legend">
+            <span>
+              <i style={{ background: 'var(--series-pace)' }} />
+              Distance <Provenance kind="measured" />
+            </span>
+            <span>
+              <i style={{ background: 'var(--series-hr)' }} />
+              HR load, Edwards TRIMP (right axis){' '}
+              <Provenance kind="estimated" />
+            </span>
+          </p>
+        </div>
         <Weekly weekly={o.weekly} units={units} />
       </Card>
       <Card>
@@ -77,19 +105,23 @@ export function AnalyticsOverview({ userId }: { userId: string }) {
             Import a GPX/FIT file or sync COROS to find your fastest segments.
           </EmptyState>
         ) : (
-          <div className="grid four">
+          <dl className="instrument compact">
             {o.personal_bests.map((pb) => (
-              <p key={pb.effort}>
-                <span className="eyebrow">{names[pb.effort]}</span>
-                <br />
-                <strong>{duration(pb.elapsed_s)}</strong>
-                <br />
-                <Link href={'/app/activities/' + pb.activity_id}>
-                  {pb.title} · {pb.date}
-                </Link>
-              </p>
+              <div className="instrument-cell" key={pb.effort}>
+                <dt className="eyebrow">{names[pb.effort]}</dt>
+                <dd className="metric num">{duration(pb.elapsed_s)}</dd>
+                <dd suppressHydrationWarning>
+                  <Link href={'/app/activities/' + pb.activity_id}>
+                    {day(pb.date, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </Link>
+                </dd>
+              </div>
             ))}
-          </div>
+          </dl>
         )}
         <p className="muted">
           Fastest segment within any recorded run (elapsed time, stops before

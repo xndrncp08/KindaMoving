@@ -19,7 +19,7 @@ export default function GapChart({
   return (
     <ResponsiveContainer width="100%" height={200}>
       <AreaChart data={data} margin={{ left: 8, right: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+        <CartesianGrid vertical={false} stroke="var(--line)" />
         <XAxis
           dataKey="km"
           type="number"
@@ -28,7 +28,7 @@ export default function GapChart({
           tick={{ fontSize: 12 }}
         />
         <YAxis unit=" s" tick={{ fontSize: 12 }} width={56} />
-        <ReferenceLine y={0} stroke="#64748b" />
+        <ReferenceLine y={0} stroke="var(--ink-2)" />
         <Tooltip
           formatter={(v) =>
             `${Number(v) > 0 ? 'ahead' : 'behind'} by ${Math.abs(Number(v)).toFixed(0)} s`
@@ -37,8 +37,8 @@ export default function GapChart({
         />
         <Area
           dataKey="gap"
-          stroke="#4d7c0f"
-          fill="#84cc16"
+          stroke="var(--series-pace)"
+          fill="var(--series-pace)"
           fillOpacity={0.25}
           isAnimationActive={false}
         />

@@ -8,6 +8,8 @@ with a shared bearer token (``ANALYTICS_SERVICE_TOKEN``) over TLS.
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
+import time
 import hmac
 import os
 
@@ -27,7 +29,17 @@ from .pipeline import analyze_file
 
 MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 
-app = FastAPI(title="KindaMoving analytics", version="1", docs_url=None, redoc_url=None)
+@asynccontextmanager
+async def lifespan(_app):
+    if os.environ.get("KM_DEPLOYMENT") == "production":
+        from .deployment import configuration_errors
+        errors = configuration_errors()
+        if errors:
+            raise RuntimeError("Invalid deployment configuration: " + "; ".join(errors))
+    yield
+
+
+app = FastAPI(lifespan=lifespan, openapi_url=None, title="KindaMoving analytics", version="1", docs_url=None, redoc_url=None)
 
 
 def require_service_token(authorization: str = Header(default="")) -> None:
@@ -46,6 +58,23 @@ async def file_error(_: Request, exc: ActivityFileError) -> JSONResponse:
 @app.get("/healthz")
 def health() -> dict:
     return {"ok": True}
+
+
+_readiness = {"at": 0.0, "ok": False}
+
+
+@app.get("/readyz")
+def readiness():
+    from .deployment import configuration_errors, network_ready
+    if configuration_errors():
+        return JSONResponse({"ok": False}, status_code=503, headers={"Cache-Control": "no-store"})
+    if time.monotonic()-_readiness["at"] > 15:
+        try:
+            _readiness["ok"] = network_ready()
+        except Exception:
+            _readiness["ok"] = False
+        _readiness["at"] = time.monotonic()
+    return JSONResponse({"ok": _readiness["ok"]}, status_code=200 if _readiness["ok"] else 503, headers={"Cache-Control": "no-store"})
 
 
 async def _body(request: Request, limit: int = MAX_UPLOAD_BYTES) -> bytes:

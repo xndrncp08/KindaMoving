@@ -2,7 +2,7 @@
 
 ## Data
 
-- **Network**: OpenStreetMap ways (© OpenStreetMap contributors, **ODbL 1.0**), imported per region by `services/analytics/scripts/import_network.py` from the Overpass API (identifying User-Agent, bounded bbox). Large regions should be imported in tiles or from a Geofabrik extract.
+- **Network**: OpenStreetMap ways (© OpenStreetMap contributors, **ODbL 1.0**), imported per region by `services/analytics/scripts/import_network.py` from the Overpass API (identifying User-Agent, bounded bbox). The production import command is restricted to a reviewed Calgary pilot extract. Repeated tile imports into the same region replace rather than merge; do not use them to assemble a city network.
 - **Elevation** (optional): Copernicus DEM GLO-90 via the Open-Meteo elevation API (CC BY 4.0, free tier non-commercial). The importer **aborts** if any elevation chunk fails, because a partially elevated network would make climb metrics silently wrong. Without elevation, route reasons say "Elevation was not assessed" and never claim "0 m climb".
 - **PostGIS**: `network_nodes`, `network_edges` (GiST on `geom`), `network_imports` (provenance and license per import). RLS is enabled with no browser access. The routing service reads through `km_network_reader` (select-only on those tables).
 
@@ -10,7 +10,9 @@
 # operator, once per region (admin connection string)
 services/analytics/.venv/bin/python services/analytics/scripts/import_network.py \
   --region calgary --bbox -114.13,51.035,-114.03,51.070 --elevation open-meteo \
-  --database-url "$NETWORK_ADMIN_DATABASE_URL"
+  --from-file reviewed-calgary.json
+# Dry-run is the default. After review, set NETWORK_ADMIN_DATABASE_URL securely and add --apply.
+# Replacing existing Calgary data also requires explicit --replace-existing approval.
 # then give the routing service a read-only login
 alter role km_network_reader with login password '<generated>';   -- NETWORK_DATABASE_URL uses this role
 ```

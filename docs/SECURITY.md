@@ -52,3 +52,11 @@ All 11 migrations are applied and recorded in `supabase_migrations.schema_migrat
 - `km_network_reader` needs a login password set by the operator outside migrations; keep it read-only.
 - Run Supabase security and performance advisors after every migration on the hosted project.
 - The development audit's moderate ESLint/minimatch findings (Phase 1) remain upstream.
+
+## Phase 3 controls (supersedes the earlier “no CSP” residual risk)
+
+Every HTML request receives a fresh CSP nonce forwarded through Proxy to Next and next-themes. Production scripts require that nonce/strict-dynamic; neither unsafe-inline scripts nor unsafe-eval is allowed. MapLibre's pinned installed module worker remains served locally. Worker sources are same-origin/blob, map resources are restricted to tiles.openfreemap.org, Supabase connections/storage/media to the configured origin and WSS. Analytics and provider/feed URLs are server-only and receive no browser CSP grants. Inline style permission is retained for MapLibre/Radix/React/Recharts positioning; this is a documented style exception, not script permission. Frame ancestors, objects and base injection are denied. Production browser tests cover parser-inserted script blocking and actual worker/GeoJSON rendering.
+
+The analytics HTTP client rejects redirects to prevent leaking bearer tokens. Render exposes no OpenAPI schema or cross-origin browser API; token checks remain constant-time. Production startup rejects missing/invalid secrets and insecure DSNs. Readiness probes are bounded, avoid user-data exports and redact dependency exceptions. The web dependency probe is scheduler-authenticated. The Render platform probe is public but returns only `{ok}`.
+
+Retention leaves annotated object references intact if Storage deletion fails, so retry is possible. Official feed/persistence failures produce a detectable HTTP 503. The network importer defaults to dry-run and requires explicit application/replacement opt-in; atomic transactions and locks prevent partial/colliding replacements. Reference-data writer credentials never enter the runtime analytics service. No hosted schema/data/security settings were mutated in Phase 3.

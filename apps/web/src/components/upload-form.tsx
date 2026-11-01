@@ -33,7 +33,7 @@ export function UploadForm({ userId }: { userId: string }) {
     <Card>
       <h2>Bring your file.</h2>
       <p className="muted">
-        GPX or FIT up to 5 MB. Files are processed in the background: GPS
+        GPX or FIT up to 4 MiB. Files are processed in the background: GPS
         cleanup, moving time, splits, heart rate and elevation. Re-uploading the
         same file never duplicates a run.
       </p>
@@ -47,7 +47,7 @@ export function UploadForm({ userId }: { userId: string }) {
           setError('');
           setMessage('');
           if (!(file instanceof File) || file.size > MAX_FILE_BYTES) {
-            setError('Choose a GPX or FIT file up to 5 MB.');
+            setError('Choose a GPX or FIT file up to 4 MiB.');
             return;
           }
           // GPX carries no time zone; the browser's zone is the fallback for local dates.

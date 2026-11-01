@@ -1,16 +1,34 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { contentSecurityPolicy } from './lib/security';
 import { configured, credentials } from './lib/env';
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
-  if (!configured()) return response;
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const csp = contentSecurityPolicy(
+    nonce,
+    process.env.NODE_ENV === 'development',
+  );
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('Content-Security-Policy', csp);
+  const next = () =>
+    NextResponse.next({ request: { headers: requestHeaders } });
+  let response = next();
+  response.headers.set('Content-Security-Policy', csp);
+  if (
+    !configured() ||
+    !/^\/(app|onboarding|api|auth|login)(?:\/|$)/.test(request.nextUrl.pathname)
+  )
+    return response;
   const { url, key } = credentials();
   const db = createServerClient(url, key, {
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll(values, headers) {
         values.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        requestHeaders.set('cookie', request.cookies.toString());
+        response = next();
+        response.headers.set('Content-Security-Policy', csp);
         values.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options),
         );
@@ -26,10 +44,6 @@ export async function proxy(request: NextRequest) {
 }
 export const config = {
   matcher: [
-    '/app/:path*',
-    '/onboarding',
-    '/api/:path*',
-    '/auth/:path*',
-    '/login',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|webp|mjs|js|webmanifest)$).*)',
   ],
 };

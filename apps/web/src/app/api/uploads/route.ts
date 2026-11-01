@@ -16,7 +16,7 @@ export async function POST(request: Request) {
       size += value.length;
       if (size > MAX_FILE_BYTES + 65536) {
         await reader.cancel();
-        throw new ApiError(413, 'Upload exceeds 5 MB.');
+        throw new ApiError(413, 'Upload exceeds 4 MiB.');
       }
       chunks.push(value);
     }

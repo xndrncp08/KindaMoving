@@ -2,7 +2,11 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
-  use: { baseURL: 'http://127.0.0.1:3000', trace: 'retain-on-failure' },
+  use: {
+    launchOptions: { args: ['--enable-unsafe-swiftshader'] },
+    baseURL: 'http://127.0.0.1:3000',
+    trace: 'retain-on-failure',
+  },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
     {
@@ -11,7 +15,8 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev',
+    command:
+      process.env.PW_PRODUCTION === '1' ? 'npm run start' : 'npm run dev',
     url: 'http://127.0.0.1:3000',
     reuseExistingServer: !process.env.CI,
     env: {

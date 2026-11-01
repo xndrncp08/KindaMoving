@@ -2,9 +2,6 @@ import { describe, it, expect } from 'vitest';
 import { zonedToUtc } from '@/lib/routes/time';
 import { mapDetour, mapIncident } from '@/lib/server/official';
 import { envBetween } from '@/lib/server/conditions';
-// DST mechanics are tested on America/Denver, whose rules are stable. America/Edmonton is not
-// hard-coded across November 2026: Alberta moved to permanent UTC-6 (IANA tz update after
-// 2026a), so its offset after that date depends on the runtime's tz database version.
 describe('time zones', () => {
   it('converts wall-clock time across a DST change', () => {
     expect(

@@ -6,3 +6,5 @@ coverage
 playwright-report
 test-results
 apps/web/public/maplibre-gl-worker.mjs
+.agents/
+.claude/skills/

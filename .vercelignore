@@ -1,0 +1,16 @@
+# CLI deployments upload the workspace; never include local secrets or bulky local state.
+.env*
+**/.env*
+!**/.env.example
+.git
+**/node_modules
+**/.next
+**/.venv
+**/__pycache__
+**/.pytest_cache
+services/analytics
+supabase/tests
+.claude
+.agents
+playwright-report
+test-results

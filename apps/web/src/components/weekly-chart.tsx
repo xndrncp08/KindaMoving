@@ -19,19 +19,32 @@ export default function WeeklyChart({
 }) {
   const div = units === 'imperial' ? 1609.344 : 1000;
   const data = weekly.map((w) => ({
-    week: w.week.slice(5),
+    week: new Intl.DateTimeFormat(undefined, {
+      month: 'short',
+      day: 'numeric',
+    }).format(new Date(w.week + 'T12:00:00')),
     distance: Math.round((w.distance_m / div) * 10) / 10,
     trimp: w.hr_runs ? Math.round(w.trimp) : null,
   }));
   const hasTrimp = data.some((d) => d.trimp);
+  const tick = { fontSize: 11, fill: 'var(--muted)' };
   return (
     <ResponsiveContainer width="100%" height={220}>
       <ComposedChart data={data} margin={{ left: 0, right: 8 }}>
-        <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
-        <XAxis dataKey="week" tick={{ fontSize: 12 }} />
+        <CartesianGrid vertical={false} stroke="var(--line)" />
+        <XAxis
+          dataKey="week"
+          tick={tick}
+          tickLine={false}
+          axisLine={{ stroke: 'var(--line)' }}
+          interval="preserveStartEnd"
+          minTickGap={16}
+        />
         <YAxis
           yAxisId="d"
-          tick={{ fontSize: 12 }}
+          tick={tick}
+          tickLine={false}
+          axisLine={false}
           unit={units === 'imperial' ? ' mi' : ' km'}
           width={56}
         />
@@ -39,16 +52,19 @@ export default function WeeklyChart({
           <YAxis
             yAxisId="t"
             orientation="right"
-            tick={{ fontSize: 12 }}
+            tick={tick}
+            tickLine={false}
+            axisLine={false}
             width={40}
           />
         )}
-        <Tooltip />
+        <Tooltip cursor={{ fill: 'var(--surface-2)' }} />
         <Bar
           yAxisId="d"
           dataKey="distance"
           name="Distance"
-          fill="#6d871b"
+          fill="var(--series-pace)"
+          radius={[3, 3, 0, 0]}
           isAnimationActive={false}
         />
         {hasTrimp && (
@@ -56,7 +72,8 @@ export default function WeeklyChart({
             yAxisId="t"
             dataKey="trimp"
             name="HR load (Edwards TRIMP)"
-            stroke="#c2410c"
+            stroke="var(--series-hr)"
+            strokeWidth={2}
             dot={false}
             isAnimationActive={false}
           />

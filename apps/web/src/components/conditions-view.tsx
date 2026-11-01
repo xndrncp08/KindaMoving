@@ -276,6 +276,7 @@ export function ConditionsView({ userId }: { userId: string }) {
         onPick={(lat, lon) => setPin({ lat, lon })}
         fitKey={undefined}
         label="Conditions map. Tap to place a report."
+        legend={['hazard', 'start']}
       />
     </div>
   );

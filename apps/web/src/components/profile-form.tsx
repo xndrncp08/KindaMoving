@@ -138,8 +138,8 @@ function Editor({
           Email notifications preference (delivery planned)
         </label>
         <p className="muted full">
-          All running records remain private in Phase 1. Public sharing is
-          planned.
+          All running records are private to your account. Nothing is shared
+          publicly.
         </p>
         {Object.entries(errors).map(([key, e]) => (
           <p className="field-error full" role="alert" key={key}>

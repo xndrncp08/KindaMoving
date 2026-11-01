@@ -1,0 +1,20 @@
+name: Production read-only smoke
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - run: python3 scripts/smoke-production.py
+        env:
+          WEB_BASE_URL: ${{ vars.WEB_BASE_URL }}
+          ANALYTICS_URL: ${{ vars.ANALYTICS_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          ANALYTICS_SERVICE_TOKEN: ${{ secrets.ANALYTICS_SERVICE_TOKEN }}

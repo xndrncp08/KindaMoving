@@ -19,3 +19,13 @@ Apply migrations first. A missing profile sends an authenticated runner to onboa
 - Validate private/no-store responses at the deployed CDN.
 
 No live Auth or OAuth acceptance is claimed without configured credentials. Auth tests here exercise local boundaries and mocked SDK/UI behavior; SQL tests exercise actual PostgreSQL policies with an auth identity test double.
+
+## Production configuration checklist (Phase 3)
+
+Set the Supabase **Site URL** to the exact canonical HTTPS app origin. Add that origin's `/auth/callback` to the redirect allowlist and explicitly add only reviewed staging origins. Keep localhost callbacks in the development project. Do not grant a wildcard for all `*.vercel.app` projects access to production authentication. Google uses the Supabase provider callback URL (shown in its dashboard), with app callback URLs configured separately; keep the public Google flag false until tested. COROS has its own `/api/coros/callback` and per-origin dynamic registration and is not a Supabase social provider.
+
+Enable confirmed email and the app's minimum 12-character password policy in Auth. Configure custom SMTP host/port/user/password, verified From domain/address, SPF/DKIM and appropriate DMARC; verify delivered confirmation and recovery messages in a **staging** account. Keep the confirmation/recovery templates' Supabase confirmation URL/redirect parameters so the existing PKCE code-exchange callback is reached. Test on the same browser initiating PKCE and test expired/used links. Disable email-provider click tracking if it rewrites/breaks one-use links. Review bounce suppression and quotas with the email provider.
+
+Supabase's built-in SMTP is not a production mail service: it restricts recipients to authorized/team addresses, currently limits delivery to about two messages per hour, and offers no delivery SLA. Custom SMTP removes that test sender restriction but requires you to review **Authentication → Rate Limits** and your SMTP provider's own limits. Keep endpoint/IP and email resend throttles enabled; current documented signup/sign-in defaults are 30 requests/5 minutes with bounded bursts. Start within the verified mail provider allowance, monitor 429s/delivery failures, and increase only with an abuse/volume justification. Do not make the service-role key public or disable rate limits to fix failed signup. Configure bot protection before unrestricted public signup where appropriate.
+
+Sources checked 2026-11-01: [Supabase SMTP](https://supabase.com/docs/guides/auth/auth-smtp), [rate limits](https://supabase.com/docs/guides/auth/rate-limits), [redirect URLs](https://supabase.com/docs/guides/auth/redirect-urls). These are operator setup requirements; no live Auth settings were changed in Phase 3.

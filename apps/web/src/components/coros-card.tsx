@@ -98,7 +98,7 @@ export function CorosCard({ userId }: { userId: string }) {
         />
       )}
       <p>
-        <span className="badge">
+        <span className={s.status === 'connected' ? 'badge' : 'badge quiet'}>
           COROS ·{' '}
           {
             {

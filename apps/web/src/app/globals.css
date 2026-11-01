@@ -1874,3 +1874,21 @@ footer {
     min-width: 120px;
   }
 }
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--s-1);
+}
+.compare-toggle {
+  display: inline-flex;
+  min-height: 44px;
+  padding-right: var(--s-2);
+  font-weight: 500;
+}
+.danger-icon {
+  color: var(--danger);
+}
+.danger-icon:hover:not(:disabled) {
+  background: var(--danger-soft);
+}

@@ -5,7 +5,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapContainer } from '@km/ui';
 import { useMap } from '@/lib/stores';
 import { bounds } from '@/lib/geo';
-import { MapLegend, mapColor } from './map-legend';
+import { MapLegend, mapColor, type LegendKey } from './map-legend';
 
 export interface MapPoint {
   lat: number;
@@ -27,8 +27,8 @@ interface Props {
   onPick?: (lat: number, lon: number) => void;
   fitKey?: string;
   label?: string;
-  /** Workspaces render their own legend beside the map. */
-  legend?: boolean;
+  /** Legend entries relevant to this map; false when a workspace renders its own. */
+  legend?: false | LegendKey[];
   /** Keeps fitted routes clear of panels floating over the map. */
   fitPadding?: maplibregl.PaddingOptions | number;
 }
@@ -47,7 +47,7 @@ export default function PlannerMap({
   onPick,
   fitKey,
   label = 'Route map',
-  legend = true,
+  legend,
   fitPadding = 40,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
@@ -201,7 +201,7 @@ export default function PlannerMap({
           {error}
         </p>
       )}
-      {legend && <MapLegend />}
+      {legend !== false && <MapLegend keys={legend} />}
     </>
   );
 }

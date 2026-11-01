@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Button, Card, DataTable, ErrorState, Input, Skeleton } from '@km/ui';
 import { api, keys, recordsQuery } from '@/lib/queries';
-import { duration } from '@/lib/metrics';
+import { day, duration } from '@/lib/metrics';
 import { useGhostPlayback } from '@/lib/stores';
 const PlannerMap = dynamic(() => import('./planner-map'), {
   ssr: false,
@@ -105,8 +105,12 @@ export function GhostReplay({
               <option value="">Choose a run</option>
               {runs.map((r) => (
                 <option key={r.id} value={r.id}>
-                  {r.started_at} · {r.title} ·{' '}
-                  {(r.distance_m / 1000).toFixed(1)} km
+                  {day(r.started_at, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}{' '}
+                  · {(r.distance_m / 1000).toFixed(1)} km
                 </option>
               ))}
             </select>
@@ -119,8 +123,12 @@ export function GhostReplay({
                 .filter((r) => r.id !== a)
                 .map((r) => (
                   <option key={r.id} value={r.id}>
-                    {r.started_at} · {r.title} ·{' '}
-                    {(r.distance_m / 1000).toFixed(1)} km
+                    {day(r.started_at, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}{' '}
+                    · {(r.distance_m / 1000).toFixed(1)} km
                   </option>
                 ))}
             </select>
@@ -158,6 +166,7 @@ export function GhostReplay({
             ]}
             fitKey={`${a}-${b}`}
             label="Ghost replay map: the dark dot is you, the grey dot is your ghost."
+            legend={['route', 'runner', 'ghost']}
           />
           <Card>
             <div className="row">
@@ -200,8 +209,8 @@ export function GhostReplay({
                   : `${Math.round(-frame.ahead_m)} m behind`}
             </p>
             <p className="muted">
-              {label(a)?.started_at} vs {label(b)?.started_at} · at the shared
-              finish{' '}
+              {label(a) && day(label(a)!.started_at)} vs{' '}
+              {label(b) && day(label(b)!.started_at)} · at the shared finish{' '}
               {q.data.finish?.gap_s == null
                 ? '—'
                 : q.data.finish.gap_s > 0

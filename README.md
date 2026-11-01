@@ -50,6 +50,7 @@ npx playwright install chromium && npm run test:e2e
 - [Testing and verification limits](docs/TESTING.md), [contribution guide](CONTRIBUTING.md)
 - Phase 2: [audit](docs/PHASE2_AUDIT.md), [processing](docs/ACTIVITY_PROCESSING.md), [metrics](docs/RUNNING_METRICS.md), [analytics](docs/ANALYTICS.md), [COROS](docs/COROS_INTEGRATION.md), [routing](docs/ROUTING.md), [conditions](docs/CONDITIONS.md), [training](docs/TRAINING.md), [ghost](docs/GHOST.md), [gear](docs/GEAR.md), [form](docs/FORM.md)
 - [Security](docs/SECURITY.md), [performance](docs/PERFORMANCE.md), [deployment & operations](docs/DEPLOYMENT.md)
+- [Production requirements](docs/PRODUCTION_REQUIREMENTS.md), [safe network import](docs/NETWORK_IMPORT.md), [Phase 3 handoff](docs/PHASE3_HANDOFF.md)
 - [Phase 1 handoff](docs/CLAUDE_HANDOFF.md)
 
 This is a verified foundation, not a deployed public service. Live Supabase configuration, SMTP, operational policies and integration acceptance remain launch requirements.

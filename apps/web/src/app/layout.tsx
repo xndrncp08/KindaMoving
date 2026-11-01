@@ -1,3 +1,4 @@
+import { headers } from 'next/headers';
 import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from '@/components/providers';
@@ -18,18 +19,19 @@ export const metadata: Metadata = {
   },
   icons: { icon: '/icon.svg', apple: '/apple-touch-icon.png' },
 };
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
         <a className="skip" href="#main">
           Skip to content
         </a>
-        <Providers>{children}</Providers>
+        <Providers nonce={nonce}>{children}</Providers>
       </body>
     </html>
   );

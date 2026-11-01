@@ -35,7 +35,8 @@ import math
 import statistics
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from zoneinfo import ZoneInfoNotFoundError
+from .timezones import zone_at
 
 from .geo import LocalProjection, segment_m
 from .model import ActivityFileError, ParsedActivity, Sample
@@ -265,7 +266,7 @@ def _offset(parsed: ParsedActivity, start: float, fallback_tz: str | None) -> tu
     if parsed.utc_offset_s is not None:
         return parsed.utc_offset_s, False
     try:
-        zone = ZoneInfo(fallback_tz) if fallback_tz else timezone.utc
+        zone = zone_at(fallback_tz, start) if fallback_tz else timezone.utc
     except (ZoneInfoNotFoundError, ValueError):
         zone = timezone.utc
     delta = datetime.fromtimestamp(start, tz=timezone.utc).astimezone(zone).utcoffset() or timedelta(0)

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "cd ../.. && npm ci",
+  "buildCommand": "npm run build",
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 300
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/jobs/run",
+      "schedule": "* * * * *"
+    },
+    {
+      "path": "/api/conditions/official",
+      "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/form/cleanup",
+      "schedule": "17 9 * * *"
+    }
+  ]
+}

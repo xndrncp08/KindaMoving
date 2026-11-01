@@ -46,3 +46,9 @@ Maps and charts are `next/dynamic` imports with `ssr: false`, absent from the ma
 ## Not measured (and not claimed)
 
 End-to-end API latency on hosted infrastructure, PostGIS network load time on Supabase, real-device mobile rendering, and MediaPipe throughput on real footage.
+
+## Phase 3 deployment tradeoffs (not new performance measurements)
+
+Nonce CSP moves HTML, including marketing, to dynamic rendering; public metadata/static assets remain cacheable. Do not cache nonce HTML independently from its matching CSP response. No new latency/throughput improvement is claimed. Maps/charts remain lazy, stores/query responsibilities are unchanged, and no routing/analytics algorithm was replaced.
+
+The selected Render starter compute has 512 MB RAM and one worker/concurrency two. The existing six-graph cache and optional video processing can exceed this on larger networks/media; load-test the approved Calgary pilot on the actual service and set a measured capacity plan before whole-city or Form use. Free cold starts are excluded from the proposed production topology. Monitor in-flight job duration against the 300-second Vercel limit and 240-second lease. Manual upload ingress is 4 MiB to fit Vercel's request limit; direct video and server-to-server COROS flows retain their existing limits.

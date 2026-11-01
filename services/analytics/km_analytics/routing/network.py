@@ -73,12 +73,23 @@ def load(lat: float, lon: float, radius_m: float, dsn: str | None = None) -> Gra
     return g
 
 
-def store(g: Graph, region: str, bbox: tuple[float, float, float, float], dsn: str, elevation_source: str | None) -> dict:
-    """Replace one region's network atomically (single transaction)."""
+def store(g: Graph, region: str, bbox: tuple[float, float, float, float], dsn: str, elevation_source: str | None, *, replace_existing: bool = False) -> dict:
+    """Store a validated region atomically; replacement requires explicit caller opt-in."""
     import psycopg
 
+    if not g.edges or not g.nodes or any(not math.isfinite(e.length) or e.length<=0 for e in g.edges):
+        raise ValueError("Refusing an empty or invalid network")
     used = {e.u for e in g.edges} | {e.v for e in g.edges}
-    with psycopg.connect(dsn) as conn, conn.cursor() as cur:
+    with psycopg.connect(dsn, connect_timeout=10) as conn, conn.cursor() as cur:
+        cur.execute("set local statement_timeout = '120s'")
+        cur.execute("set local lock_timeout = '5s'")
+        cur.execute("select pg_advisory_xact_lock(7348912)")
+        cur.execute("select exists(select 1 from public.network_edges where region=%s)", (region,))
+        if cur.fetchone()[0] and not replace_existing:
+            raise ValueError("Region exists; explicit replacement approval is required")
+        cur.execute("select exists(select 1 from public.network_nodes where id=any(%s) and region<>%s)", (list(used),region))
+        if cur.fetchone()[0]:
+            raise ValueError("Nodes overlap another region; refusing to overwrite it")
         cur.execute("delete from public.network_edges where region = %s", (region,))
         cur.execute("delete from public.network_nodes where region = %s and id <> all(%s)", (region, list(used)))
         cur.executemany(

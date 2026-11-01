@@ -4,20 +4,20 @@
 
 Grouped by what the runner is trying to do, not by module name:
 
-| Group | Destinations |
-| --- | --- |
-| — | **Home** |
+| Group  | Destinations                                                                                 |
+| ------ | -------------------------------------------------------------------------------------------- |
+| —      | **Home**                                                                                     |
 | Review | **Runs** (log, import, per-run analysis) · **Trends** (load, consistency, bests) · **Ghost** |
-| Plan | **Routes** · **Training** · **Conditions** |
-| Equip | **Gear** · **Form** |
-| — | **Settings** (profile, units, COROS, data export, account deletion) |
+| Plan   | **Routes** · **Training** · **Conditions**                                                   |
+| Equip  | **Gear** · **Form**                                                                          |
+| —      | **Settings** (profile, units, COROS, data export, account deletion)                          |
 
-There are no *Tracks* or *Community* destinations: those features do not exist, so they are not shown.
+There are no _Tracks_ or _Community_ destinations: those features do not exist, so they are not shown.
 
 ## One mental model, two layouts
 
 - **Desktop (>720px)**: a 248px left rail with the groups above, a persistent **Import Run** primary action, and theme/log-out at the foot. The active item gets a surface fill and a 3px accent-strong bar.
-- **Mobile (≤720px)**: a sticky header (brand + Import) and a bottom **tab bar** with the four most frequent destinations (Home, Runs, Routes, Training) plus **More**. More opens a bottom sheet containing the *same grouped list* as the desktop rail, so nothing moves between groups. More shows as current when the active page lives inside it. The tab bar respects `env(safe-area-inset-bottom)`; toasts sit above it.
+- **Mobile (≤720px)**: a sticky header (brand + Import) and a bottom **tab bar** with the four most frequent destinations (Home, Runs, Routes, Training) plus **More**. More opens a bottom sheet containing the _same grouped list_ as the desktop rail, so nothing moves between groups. More shows as current when the active page lives inside it. The tab bar respects `env(safe-area-inset-bottom)`; toasts sit above it.
 
 ## Interaction rules
 

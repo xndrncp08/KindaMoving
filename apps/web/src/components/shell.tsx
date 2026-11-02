@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
@@ -73,6 +73,29 @@ export function Shell({
 }) {
   const path = usePathname();
   const [menu, setMenu] = useState(false);
+  // The More sheet owns one history entry, so browser/Android Back closes the
+  // sheet instead of leaving the page. Native pushState is router-aware in Next.
+  const sheetEntry = useRef(false);
+  const openMenu = () => {
+    window.history.pushState(null, '', window.location.href);
+    sheetEntry.current = true;
+    setMenu(true);
+  };
+  const dismissMenu = (open: boolean) => {
+    if (open) return;
+    if (sheetEntry.current)
+      window.history.back(); // popstate closes it
+    else setMenu(false);
+  };
+  useEffect(() => {
+    if (!menu) return;
+    const onPop = () => {
+      sheetEntry.current = false;
+      setMenu(false);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, [menu]);
   const client = useQueryClient();
   const { resolvedTheme, setTheme } = useTheme();
   useEffect(() => {
@@ -107,7 +130,11 @@ export function Shell({
       href={href}
       className="nav-link"
       aria-current={active(path, href) ? 'page' : undefined}
-      onClick={() => setMenu(false)}
+      onClick={() => {
+        // Navigating replaces the sheet's entry rather than stacking on it.
+        sheetEntry.current = false;
+        setMenu(false);
+      }}
     >
       <Icon size={18} aria-hidden="true" />
       {label}
@@ -190,7 +217,7 @@ export function Shell({
           aria-expanded={menu}
           aria-haspopup="dialog"
           aria-current={moreActive ? 'page' : undefined}
-          onClick={() => setMenu(true)}
+          onClick={openMenu}
         >
           <Ellipsis size={20} aria-hidden="true" />
           More
@@ -200,7 +227,7 @@ export function Shell({
         title="Everything else"
         description="Review, plan and equip, grouped the same way as on desktop."
         open={menu}
-        onOpenChange={setMenu}
+        onOpenChange={dismissMenu}
         sheet
       >
         {nav}

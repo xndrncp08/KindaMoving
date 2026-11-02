@@ -21,6 +21,8 @@ import { api, conditionsQuery, keys } from '@/lib/queries';
 import { lineSlice } from '@/lib/geo';
 import { toGpx, gpxFilename } from '@/lib/gpx';
 import { useMap } from '@/lib/stores';
+import { useMedia } from '@/lib/use-media';
+import { snapHeight, useSheet } from '@/lib/use-sheet';
 import type { MapPoint } from './planner-map';
 import { MapLegend } from './map-legend';
 const PlannerMap = dynamic(() => import('./planner-map'), {
@@ -111,30 +113,34 @@ export function RoutePlanner({ userId }: { userId: string }) {
   });
   const [selected, setSelected] = useState(0);
   const [panel, setPanel] = useState(true);
+  // Portrait phones get a draggable sheet; landscape phones and larger screens
+  // get the collapsible side panel.
+  const sheetMode = useMedia('(max-width: 720px) and (orientation: portrait)');
+  const landscapePhone = useMedia(
+    '(max-width: 720px) and (orientation: landscape)',
+  );
+  const sheet = useSheet('half');
   const [overlay, setOverlay] = useState(true);
   const [name, setName] = useState('');
   const [saved, setSaved] = useState(false);
   const body = useRef<HTMLDivElement>(null);
-  const { register, handleSubmit, watch, formState, getValues } = useForm<
-    z.input<typeof form>,
-    unknown,
-    Form
-  >({
-    resolver: zodResolver(form),
-    defaultValues: {
-      distance_km: Number(params.get('km') ?? 10),
-      tolerance_pct: 10,
-      shape: 'loop',
-      tempo: params.has('tempo'),
-      tempo_km: Number(params.get('tempo') ?? 4),
-      tempo_max_minor: 0,
-      allow_major: false,
-      elevation: 'flat',
-      surface: 'any',
-      prefer_lit: false,
-      avoid_conditions: true,
-    },
-  });
+  const { register, handleSubmit, watch, formState, getValues, setValue } =
+    useForm<z.input<typeof form>, unknown, Form>({
+      resolver: zodResolver(form),
+      defaultValues: {
+        distance_km: Number(params.get('km') ?? 10),
+        tolerance_pct: 10,
+        shape: 'loop',
+        tempo: params.has('tempo'),
+        tempo_km: Number(params.get('tempo') ?? 4),
+        tempo_max_minor: 0,
+        allow_major: false,
+        elevation: 'flat',
+        surface: 'any',
+        prefer_lit: false,
+        avoid_conditions: true,
+      },
+    });
   const writeStart = useCallback(
     (s: Start) => {
       const next = new URLSearchParams(params);
@@ -209,6 +215,7 @@ export function RoutePlanner({ userId }: { userId: string }) {
     onSuccess: (r) => {
       setSelected(0);
       body.current?.scrollTo({ top: 0 });
+      if (sheet.snap === 'peek') sheet.setSnap('half');
       setSaved(false);
       if (r.routes[0])
         setName(
@@ -315,19 +322,20 @@ export function RoutePlanner({ userId }: { userId: string }) {
     a.click();
     URL.revokeObjectURL(a.href);
   };
-  // Read at fit time only (the map is client-only), so no hydration concern.
-  const phone =
-    typeof window !== 'undefined' &&
-    !!window.matchMedia?.('(max-width: 720px)').matches;
-  const fitPadding = phone
+  // Fit routes into the part of the map the panel or sheet leaves visible.
+  const workspaceH =
+    typeof window === 'undefined' ? 600 : window.innerHeight - 64;
+  const fitPadding = sheetMode
     ? {
         top: 72,
         right: 24,
         left: 24,
-        // sheet is 62% of the workspace (viewport minus header and tab bar)
-        bottom: panel ? Math.round((window.innerHeight - 125) * 0.62) + 16 : 96,
+        bottom: snapHeight(sheet.snap, workspaceH) + 16,
       }
-    : { top: 72, right: 72, bottom: 48, left: panel ? 448 : 48 };
+    : landscapePhone
+      ? { top: 24, right: 56, bottom: 24, left: panel ? 360 : 24 }
+      : { top: 72, right: 72, bottom: 48, left: panel ? 448 : 48 };
+  const bodyHidden = sheetMode ? sheet.snap === 'peek' : !panel;
   const tempoOn = watch('tempo');
   const errors = Object.entries(formState.errors);
   return (
@@ -340,7 +348,7 @@ export function RoutePlanner({ userId }: { userId: string }) {
           onPick={setStart}
           fitKey={
             current
-              ? `${generate.submittedAt}-${selected}`
+              ? `${generate.submittedAt}-${selected}-${sheetMode ? sheet.snap : panel}`
               : start
                 ? 'start'
                 : undefined
@@ -382,16 +390,21 @@ export function RoutePlanner({ userId }: { userId: string }) {
         </label>
       </div>
       <section
+        ref={sheet.ref}
         className="workspace-panel"
         data-open={panel}
+        data-snap={sheetMode ? sheet.snap : undefined}
         aria-labelledby="planner-title"
       >
         <button
           type="button"
           className="panel-handle"
-          aria-expanded={panel}
+          aria-expanded={!bodyHidden}
           aria-controls="planner-body"
-          onClick={() => setPanel(!panel)}
+          aria-keyshortcuts={sheetMode ? 'ArrowUp ArrowDown' : undefined}
+          {...(sheetMode
+            ? sheet.handleProps
+            : { onClick: () => setPanel(!panel) })}
         >
           <span>
             <span className="eyebrow">KM Routes</span>
@@ -403,7 +416,7 @@ export function RoutePlanner({ userId }: { userId: string }) {
                   : 'Choose a start point'}
             </span>
           </span>
-          {panel ? (
+          {!bodyHidden ? (
             <ChevronDown size={20} aria-hidden="true" />
           ) : (
             <SlidersHorizontal size={20} aria-hidden="true" />
@@ -413,7 +426,7 @@ export function RoutePlanner({ userId }: { userId: string }) {
           id="planner-body"
           ref={body}
           className="panel-body"
-          hidden={!panel}
+          hidden={bodyHidden}
         >
           {routes.length > 0 && current && (
             <div className="stack candidates">
@@ -574,96 +587,127 @@ export function RoutePlanner({ userId }: { userId: string }) {
                 ? `Start ${start.lat.toFixed(4)}, ${start.lon.toFixed(4)}`
                 : 'No start point yet.'}
             </p>
-            <div className="form-grid">
-              <label>
-                Distance (km)
-                <Input
-                  type="number"
-                  inputMode="decimal"
-                  step="0.1"
-                  autoComplete="off"
-                  aria-invalid={!!formState.errors.distance_km}
-                  {...register('distance_km')}
-                />
-              </label>
-              <label>
-                Tolerance (±%)
-                <Input
-                  type="number"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  aria-invalid={!!formState.errors.tolerance_pct}
-                  {...register('tolerance_pct')}
-                />
-              </label>
-              <label>
-                Shape
-                <select {...register('shape')} disabled={tempoOn}>
-                  <option value="loop">Loop</option>
-                  <option value="out_and_back">Out and back</option>
-                </select>
-              </label>
-              <label>
-                Elevation
-                <select {...register('elevation')}>
-                  <option value="flat">Minimal climbing</option>
-                  <option value="any">No preference</option>
-                  <option value="hilly">Hills welcome</option>
-                </select>
-              </label>
-              <label className="full">
-                Surface
-                <select {...register('surface')}>
-                  <option value="any">Any</option>
-                  <option value="paved">Paved</option>
-                  <option value="unpaved">Trails / unpaved</option>
-                </select>
-              </label>
+            <label>
+              Distance (km)
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.1"
+                autoComplete="off"
+                aria-invalid={!!formState.errors.distance_km}
+                {...register('distance_km')}
+              />
+            </label>
+            {/* Common distances in one tap: no keyboard needed outdoors. */}
+            <div className="chips" role="group" aria-label="Quick distance">
+              {[5, 8, 10, 16, 21.1].map((km) => (
+                <button
+                  key={km}
+                  type="button"
+                  className="chip"
+                  aria-pressed={Number(watch('distance_km')) === km}
+                  onClick={() =>
+                    setValue('distance_km', km, { shouldValidate: true })
+                  }
+                >
+                  {km} km
+                </button>
+              ))}
             </div>
-            <fieldset className="stack tight">
-              <legend className="sr-only">Route preferences</legend>
-              <label>
-                <input type="checkbox" {...register('tempo')} />
-                Uninterrupted tempo section
-              </label>
-              {tempoOn && (
-                <div className="form-grid">
-                  <label>
-                    Tempo (km)
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      step="0.1"
-                      autoComplete="off"
-                      aria-invalid={!!formState.errors.tempo_km}
-                      {...register('tempo_km')}
-                    />
-                  </label>
-                  <label>
-                    Max minor crossings
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      autoComplete="off"
-                      aria-invalid={!!formState.errors.tempo_max_minor}
-                      {...register('tempo_max_minor')}
-                    />
-                  </label>
-                  <label className="full">
-                    <input type="checkbox" {...register('allow_major')} />
-                    Allow one major crossing
-                  </label>
-                </div>
-              )}
-              <label>
-                <input type="checkbox" {...register('prefer_lit')} />
-                Prefer lit paths
-              </label>
-              <label>
-                <input type="checkbox" {...register('avoid_conditions')} />
-                Avoid recently reported hazards
-              </label>
-            </fieldset>
+            <details className="prefs">
+              <summary>
+                Route preferences
+                <span className="muted prefs-summary">
+                  {watch('shape') === 'loop' ? 'Loop' : 'Out and back'} ·{' '}
+                  {
+                    {
+                      flat: 'Minimal climbing',
+                      any: 'Any climbing',
+                      hilly: 'Hills welcome',
+                    }[String(watch('elevation'))]
+                  }
+                </span>
+              </summary>
+              <div className="form-grid">
+                <label>
+                  Tolerance (±%)
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    aria-invalid={!!formState.errors.tolerance_pct}
+                    {...register('tolerance_pct')}
+                  />
+                </label>
+                <label>
+                  Shape
+                  <select {...register('shape')} disabled={tempoOn}>
+                    <option value="loop">Loop</option>
+                    <option value="out_and_back">Out and back</option>
+                  </select>
+                </label>
+                <label>
+                  Elevation
+                  <select {...register('elevation')}>
+                    <option value="flat">Minimal climbing</option>
+                    <option value="any">No preference</option>
+                    <option value="hilly">Hills welcome</option>
+                  </select>
+                </label>
+                <label className="full">
+                  Surface
+                  <select {...register('surface')}>
+                    <option value="any">Any</option>
+                    <option value="paved">Paved</option>
+                    <option value="unpaved">Trails / unpaved</option>
+                  </select>
+                </label>
+              </div>
+              <fieldset className="stack tight">
+                <legend className="sr-only">Route preferences</legend>
+                <label>
+                  <input type="checkbox" {...register('tempo')} />
+                  Uninterrupted tempo section
+                </label>
+                {tempoOn && (
+                  <div className="form-grid">
+                    <label>
+                      Tempo (km)
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.1"
+                        autoComplete="off"
+                        aria-invalid={!!formState.errors.tempo_km}
+                        {...register('tempo_km')}
+                      />
+                    </label>
+                    <label>
+                      Max minor crossings
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        autoComplete="off"
+                        aria-invalid={!!formState.errors.tempo_max_minor}
+                        {...register('tempo_max_minor')}
+                      />
+                    </label>
+                    <label className="full">
+                      <input type="checkbox" {...register('allow_major')} />
+                      Allow one major crossing
+                    </label>
+                  </div>
+                )}
+                <label>
+                  <input type="checkbox" {...register('prefer_lit')} />
+                  Prefer lit paths
+                </label>
+                <label>
+                  <input type="checkbox" {...register('avoid_conditions')} />
+                  Avoid recently reported hazards
+                </label>
+              </fieldset>
+            </details>
             {errors.length > 0 && (
               <div className="error" role="alert">
                 {errors.map(([k]) => (

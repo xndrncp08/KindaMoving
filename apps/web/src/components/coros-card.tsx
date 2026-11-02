@@ -89,7 +89,7 @@ export function CorosCard({ userId }: { userId: string }) {
   const s = status.data;
   const flash = params.get('coros');
   return (
-    <div className="stack">
+    <div className="stack" id="coros" style={{ scrollMarginTop: '5rem' }}>
       {flash === 'error' && (
         <ErrorState
           message={

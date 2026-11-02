@@ -18,6 +18,7 @@ import {
 } from '@/lib/queries';
 import { day, distance, duration, pace, span } from '@/lib/metrics';
 import { useDashboard } from '@/lib/stores';
+import { HomeStatus } from './home-status';
 
 const isoDay = (d: Date) => d.toLocaleDateString('en-CA');
 function weekDays() {
@@ -111,14 +112,15 @@ export function Dashboard({ userId }: { userId: string }) {
             Hey, {profile.data?.preferred_name || 'runner'}.
           </h1>
         </div>
-        <div className="row">
+        {/* On phones these live in the tab bar and header; desktop keeps them here. */}
+        <div className="row hide-sm">
           <Button asChild variant="outline">
             <Link href="/app/routes/plan">
               <Map size={16} aria-hidden="true" />
               Plan a Route
             </Link>
           </Button>
-          <Button asChild className="hide-sm">
+          <Button asChild>
             <Link href="/app/activities#import">
               <Upload size={16} aria-hidden="true" />
               Import Run
@@ -210,7 +212,7 @@ export function Dashboard({ userId }: { userId: string }) {
         </ol>
       </section>
 
-      <div className="grid two">
+      <div className="grid two home-pair">
         <Card className="next-up">
           <p className="eyebrow">Next up</p>
           {next ? (
@@ -235,15 +237,15 @@ export function Dashboard({ userId }: { userId: string }) {
               </Button>
             </>
           ) : (
-            <>
-              <h2>Nothing scheduled</h2>
-              <p className="muted">
-                Build a plan around your race distance or add a single workout.
-              </p>
-              <Button asChild variant="outline">
-                <Link href="/app/training/plan">Build a Plan</Link>
-              </Button>
-            </>
+            <p className="next-empty">
+              <span>
+                <strong>Nothing scheduled.</strong>{' '}
+                <span className="muted">Plan around your race distance.</span>
+              </span>
+              <Link href="/app/training/plan" className="link-arrow">
+                Build a Plan <ArrowUpRight size={14} aria-hidden="true" />
+              </Link>
+            </p>
           )}
         </Card>
         <Card className="last-run">
@@ -308,8 +310,10 @@ export function Dashboard({ userId }: { userId: string }) {
         </Card>
       </div>
 
+      <HomeStatus userId={userId} />
+
       {runs.length > 1 && (
-        <section aria-labelledby="recent-title" className="stack">
+        <section aria-labelledby="recent-title" className="stack recent">
           <div className="row between">
             <h2 id="recent-title">Recent runs</h2>
             <Link href="/app/activities" className="link-arrow">
@@ -363,7 +367,7 @@ export function Dashboard({ userId }: { userId: string }) {
         </section>
       )}
 
-      <section aria-labelledby="gear-title" className="stack">
+      <section aria-labelledby="gear-title" className="stack shoes">
         <div className="row between">
           <h2 id="gear-title">Shoe rotation</h2>
           <Button variant="ghost" onClick={toggle} aria-expanded={showGear}>

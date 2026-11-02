@@ -21,6 +21,9 @@ export const viewport: Viewport = {
     { media: '(prefers-color-scheme: dark)', color: '#111311' },
   ],
   viewportFit: 'cover',
+  // The keyboard shrinks the layout viewport, so focused fields and their
+  // errors stay visible above it (Chrome/Android; iOS Safari already pans).
+  interactiveWidget: 'resizes-content',
 };
 export const metadata: Metadata = {
   metadataBase: new URL(

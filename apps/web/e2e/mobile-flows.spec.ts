@@ -88,3 +88,56 @@ test('Home leads with the next workout on phones', async ({ page }) => {
     page.getByRole('region', { name: 'Device and conditions' }),
   ).toBeVisible();
 });
+
+test('condition reports are one-tap with the map first', async ({ page }) => {
+  await login(page, '/app/conditions');
+  const map = (await page
+    .locator('.conditions-layout .map-container')
+    .boundingBox())!;
+  const form = (await page
+    .getByRole('heading', { name: 'Report a condition' })
+    .boundingBox())!;
+  expect(map.y).toBeLessThan(form.y);
+  const avoid = page.getByRole('button', { name: 'Avoid', exact: true });
+  await avoid.click();
+  await expect(avoid).toHaveAttribute('aria-pressed', 'true');
+  await expect(
+    page.getByRole('button', { name: 'Use My Location' }),
+  ).toBeVisible();
+  // Not submitted: reports are public, and this is a shared test database.
+});
+
+test('the training week reads as a vertical agenda', async ({ page }) => {
+  await login(page, '/app/training');
+  const days = page.locator('.calendar .day');
+  await expect(days).toHaveCount(7);
+  const [a, b] = [
+    await days.nth(0).boundingBox(),
+    await days.nth(1).boundingBox(),
+  ];
+  expect(b!.y).toBeGreaterThan(a!.y);
+  expect(Math.abs(b!.x - a!.x)).toBeLessThan(2);
+});
+
+test('run analysis fits a phone and jumps between sections', async ({
+  page,
+}) => {
+  await login(page);
+  const runs: { id: string }[] = await page.evaluate(async () =>
+    (await fetch('/api/activities')).json(),
+  );
+  await page.goto('/app/activities/' + runs[0].id);
+  await expect(page.getByRole('heading', { name: 'Splits' })).toBeAttached();
+  await page
+    .getByRole('navigation', { name: 'Run sections' })
+    .getByRole('link', { name: 'Splits' })
+    .click();
+  await expect(page.getByRole('heading', { name: 'Splits' })).toBeInViewport();
+  const table = page
+    .locator('section[aria-labelledby="splits-title"] .table-scroll')
+    .first();
+  // All split columns fit without scrolling sideways.
+  expect(
+    await table.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+  ).toBe(true);
+});

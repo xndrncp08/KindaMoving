@@ -31,6 +31,11 @@ interface Props {
   legend?: false | LegendKey[];
   /** Keeps fitted routes clear of panels floating over the map. */
   fitPadding?: maplibregl.PaddingOptions | number;
+  /**
+   * Embedded maps inside a scrolling page: one finger scrolls the page, two
+   * fingers (or Ctrl/⌘ + wheel) move the map. Full-screen workspaces opt out.
+   */
+  cooperative?: boolean;
 }
 const color: Record<MapPoint['kind'], string> = mapColor;
 const empty = { type: 'FeatureCollection' as const, features: [] };
@@ -49,10 +54,12 @@ export default function PlannerMap({
   label = 'Route map',
   legend,
   fitPadding = 40,
+  cooperative = true,
 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const pick = useRef(onPick);
+  const coop = useRef(cooperative); // fixed for the map's lifetime
   const [ready, setReady] = useState(false);
   const [error, setError] = useState('');
   useEffect(() => {
@@ -67,6 +74,7 @@ export default function PlannerMap({
       style: 'https://tiles.openfreemap.org/styles/liberty',
       center: [v.longitude, v.latitude],
       zoom: v.zoom,
+      cooperativeGestures: coop.current,
     });
     map.current = m;
     m.addControl(new maplibregl.NavigationControl());

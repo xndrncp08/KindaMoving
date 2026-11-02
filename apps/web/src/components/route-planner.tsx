@@ -356,6 +356,7 @@ export function RoutePlanner({ userId }: { userId: string }) {
           label="Route planner map. Click or tap to set the start point, or use the start buttons in the panel."
           legend={false}
           fitPadding={fitPadding}
+          cooperative={false}
         />
       </div>
       <div className="map-tools" role="toolbar" aria-label="Map tools">

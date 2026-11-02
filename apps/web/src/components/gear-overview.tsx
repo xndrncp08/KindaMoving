@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button, Card, ErrorState, Skeleton } from '@km/ui';
 import { api, gearQuery, keys, type GearShoe } from '@/lib/queries';
-import { duration } from '@/lib/metrics';
+import { day, duration } from '@/lib/metrics';
 export function invalidateGear(
   client: ReturnType<typeof useQueryClient>,
   userId: string,
@@ -90,7 +90,10 @@ export function GearOverview({ userId }: { userId: string }) {
       )}
       {q.data.unassigned.length > 0 && (
         <Card>
-          <h2>{q.data.unassigned.length} recent run(s) without shoes</h2>
+          <h2>
+            {q.data.unassigned.length} recent{' '}
+            {q.data.unassigned.length === 1 ? 'run' : 'runs'} without shoes
+          </h2>
           <p className="muted">
             Assign them so mileage stays accurate. Totals are recalculated from
             your runs, so nothing is double counted.
@@ -110,8 +113,10 @@ export function GearOverview({ userId }: { userId: string }) {
                       )
                     }
                   />{' '}
-                  {a.started_at} · {a.title} ·{' '}
-                  {(a.distance_m / 1000).toFixed(1)} km
+                  <span suppressHydrationWarning>
+                    {day(a.started_at, { month: 'short', day: 'numeric' })}
+                  </span>{' '}
+                  · {a.title} · {(a.distance_m / 1000).toFixed(1)} km
                 </label>
               </li>
             ))}

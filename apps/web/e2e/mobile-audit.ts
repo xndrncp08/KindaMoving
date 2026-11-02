@@ -111,6 +111,16 @@ export async function audit(page: Page): Promise<Finding[]> {
       .filter(visible)
       .map((b) => b.getBoundingClientRect());
     window.scrollTo(0, document.documentElement.scrollHeight);
+    // Inner scroll areas (sheets, panels) too: their last control must also be
+    // reachable once scrolled to its end.
+    for (const el of document.querySelectorAll('main *')) {
+      const oy = getComputedStyle(el).overflowY;
+      if (
+        (oy === 'auto' || oy === 'scroll') &&
+        el.scrollHeight > el.clientHeight
+      )
+        el.scrollTop = el.scrollHeight;
+    }
     const controls = [
       ...document.querySelectorAll(
         'main button, main a, main input, main select',

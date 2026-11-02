@@ -28,14 +28,13 @@ export function UploadForm({ userId }: { userId: string }) {
   const action = useJobAction(userId);
   const imports = (jobs.data ?? [])
     .filter((j) => j.kind === 'activity_import')
-    .slice(0, 5);
+    .slice(0, 3);
   return (
     <Card id="import" style={{ scrollMarginTop: '5rem' }}>
       <h2>Import a Run</h2>
       <p className="muted">
-        GPX or FIT up to 4 MiB. Files are processed in the background: GPS
-        cleanup, moving time, splits, heart rate and elevation. Re-uploading the
-        same file never duplicates a run.
+        GPX or FIT, up to 4&nbsp;MiB. Splits, heart rate and elevation are added
+        in the background; uploading the same file twice never duplicates a run.
       </p>
       <form
         className="stack"
@@ -77,8 +76,8 @@ export function UploadForm({ userId }: { userId: string }) {
           <Input name="file" type="file" accept=".gpx,.fit" required />
         </label>
         {error && <ErrorState message={error} />}
-        <Button variant="outline" disabled={busy}>
-          {busy ? 'Uploading…' : 'Upload and import'}
+        <Button disabled={busy}>
+          {busy ? 'Uploading…' : 'Upload and Import'}
         </Button>
         {message && <p role="status">{message}</p>}
       </form>
@@ -93,8 +92,25 @@ export function UploadForm({ userId }: { userId: string }) {
             return (
               <div key={j.id} className="row between">
                 <span>
-                  <span className="badge">{statusText[j.status]}</span>{' '}
-                  {new Date(j.created_at).toLocaleString()}
+                  <span
+                    className={
+                      j.status === 'succeeded'
+                        ? 'badge quiet'
+                        : j.status === 'failed'
+                          ? 'badge danger'
+                          : 'badge'
+                    }
+                  >
+                    {statusText[j.status]}
+                  </span>{' '}
+                  <span suppressHydrationWarning>
+                    {new Intl.DateTimeFormat(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    }).format(new Date(j.created_at))}
+                  </span>
                   {result?.outcome &&
                     ` · ${outcomeText[result.outcome] ?? result.outcome}`}
                   {j.status === 'retry_wait' &&

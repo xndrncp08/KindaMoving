@@ -50,7 +50,7 @@ export function WhyDifferent({
   const q = useQuery(explainQuery(userId, activityId));
   return (
     <Card>
-      <h2>Why was this run different?</h2>
+      <h2 id="why-title">Why was this run different?</h2>
       {q.isPending ? (
         <Skeleton />
       ) : q.error ? (

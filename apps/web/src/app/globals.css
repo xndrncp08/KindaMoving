@@ -2170,3 +2170,160 @@ footer {
 .prefs > .form-grid {
   margin-bottom: var(--s-3);
 }
+
+/* ───────────────────────── KM Analyze on phones ───────────────────────── */
+.section-nav {
+  display: none;
+}
+/* A horizontal touch on a chart scrubs the synced cursor; vertical swipes
+   still scroll the page. */
+.streams .recharts-wrapper {
+  touch-action: pan-y;
+}
+.analysis [id] {
+  scroll-margin-top: 7.5rem;
+}
+@media (max-width: 720px) {
+  .section-nav {
+    position: sticky;
+    top: calc(max(var(--s-2), env(safe-area-inset-top)) + 53px);
+    z-index: 15;
+    display: flex;
+    gap: var(--s-2);
+    margin: 0 calc(var(--s-4) * -1);
+    padding: var(--s-2) var(--s-4);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .section-nav .chip {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    text-decoration: none;
+  }
+  .analysis > .insights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-3);
+  }
+  .insight-value {
+    font-size: var(--text-md);
+  }
+  .streams figcaption {
+    padding-left: 0;
+  }
+}
+@media (max-width: 360px) {
+  .analysis > .insights {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 720px) {
+  /* Phone tables: tighter cells so four columns fit 320px without page scroll. */
+  th,
+  td {
+    padding: 0.6rem var(--s-2);
+  }
+  th:first-child,
+  td:first-child {
+    padding-left: var(--s-3);
+  }
+  th:last-child,
+  td:last-child {
+    padding-right: var(--s-3);
+  }
+  .splitbar-col {
+    width: auto;
+    min-width: 0;
+  }
+  .splitbar {
+    width: calc(100% - 3.4rem);
+    min-width: 56px;
+  }
+  .splitbar-label {
+    width: 3.2rem;
+  }
+}
+
+/* ───────────────────────── Module phone layouts ───────────────────────── */
+.filters .search {
+  flex: 3 1 220px;
+}
+.ghost-controls .scrub {
+  flex: 1 1 200px;
+}
+@media (max-width: 720px) {
+  /* Ghost: the scrubber gets the full width; Play stays under the thumb. */
+  .ghost-controls .scrub {
+    flex-basis: 100%;
+    order: -1;
+  }
+  .ghost-controls > .button {
+    flex: 1 1 auto;
+  }
+  /* Training week: a vertical agenda instead of seven 140px columns. */
+  .calendar {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+  .day {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--s-2);
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: var(--s-2) var(--s-3);
+  }
+  .day:last-child {
+    border-bottom: 0;
+  }
+  .day .eyebrow {
+    margin: 0;
+    grid-row: 1 / span 9;
+  }
+  .day a {
+    margin: 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .day:not(:has(a))::after {
+    content: 'Rest';
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+  /* Conditions: the map comes first so "tap the map" makes sense. */
+  .conditions-layout > :last-child,
+  .conditions-layout > .map-container {
+    order: -1;
+  }
+  .conditions-layout .map-container {
+    height: 42vh;
+  }
+}
+/* Native file pickers keep the platform chooser (camera roll, Files, Drive)
+   but look like our buttons and are a full-width, thumb-sized target. */
+input[type='file'].input {
+  min-height: 56px;
+  padding: var(--s-2);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  cursor: pointer;
+}
+input[type='file'].input::file-selector-button {
+  min-height: 40px;
+  margin-right: var(--s-3);
+  padding: 0 var(--s-4);
+  border: 1px solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--ink);
+  color: var(--bg);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
+}

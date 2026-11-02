@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import type { Activity, Resource } from '@km/types';
 import { ActivityAnalysis } from './activity-analysis';
@@ -7,12 +8,13 @@ import { RouteDetail } from './route-detail';
 import { cachedRecord } from '@/lib/offline/drafts';
 import { WorkoutPanel } from './workout-panel';
 import { ShoeWear } from './gear-overview';
-import { Card, ErrorState, Skeleton, EmptyState } from '@km/ui';
+import { Card, ConfirmButton, ErrorState, Skeleton, EmptyState } from '@km/ui';
 import {
   recordsQuery,
   profileQuery,
   detailQuery,
   summaryQuery,
+  useRecordMutation,
 } from '@/lib/queries';
 import { distance } from '@/lib/metrics';
 import { RecordForm } from './record-form';
@@ -36,6 +38,16 @@ export function Detail({
   const shoes = useQuery(recordsQuery(userId, 'shoes'));
   const activities = useQuery(recordsQuery(userId, 'activities'));
   const profile = useQuery(profileQuery(userId));
+  const router = useRouter();
+  const remove = useRecordMutation(userId, name);
+  const listPath =
+    '/app/' +
+    {
+      shoes: 'gear',
+      workouts: 'training',
+      activities: 'activities',
+      routes: 'routes',
+    }[name];
   if (query.isPending) return <Skeleton />;
   if (query.error && name === 'routes' && offlineCopy.data)
     return (
@@ -140,6 +152,31 @@ export function Detail({
           onSaved={() => toast.success('Details updated.')}
         />
       </Card>
+      {/* Every record can be removed from its own page, so phones (where the
+          list keeps only essentials) never lose delete. */}
+      <div className="row">
+        <ConfirmButton
+          variant="destructive"
+          disabled={remove.isPending}
+          title={`Delete “${String(r.title)}”?`}
+          description="This permanently removes the record and its linked data. Shoes still assigned to runs cannot be deleted."
+          confirmLabel="Delete Permanently"
+          onConfirm={() =>
+            remove.mutate(
+              { method: 'DELETE', recordId: id },
+              {
+                onSuccess: () => {
+                  toast.success('Deleted.');
+                  router.push(listPath);
+                },
+                onError: (e) => toast.error(e.message),
+              },
+            )
+          }
+        >
+          Delete
+        </ConfirmButton>
+      </div>
     </div>
   );
 }

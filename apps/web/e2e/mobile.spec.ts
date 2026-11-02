@@ -34,6 +34,8 @@ async function check(page: Page, name: string, vp: string, path: string) {
     if (m.type() === 'error' && !/tiles\.openfreemap/.test(m.text()))
       errors.push(m.text());
   });
+  // Hydration mismatches surface as page errors, not console messages.
+  page.on('pageerror', (e) => errors.push(e.message));
   await page.goto(path, { waitUntil: 'load' });
   await page.waitForTimeout(2500);
   mkdirSync(SHOTS, { recursive: true });

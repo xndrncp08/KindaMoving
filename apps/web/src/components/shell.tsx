@@ -99,6 +99,17 @@ export function Shell({
   const client = useQueryClient();
   const { resolvedTheme, setTheme } = useTheme();
   useEffect(() => {
+    // Remember this device's zone and locale (not sensitive) so server-rendered
+    // dates match what the browser would render, avoiding hydration mismatches.
+    const remember = (name: string, value: string) => {
+      const v = encodeURIComponent(value);
+      if (!document.cookie.split('; ').includes(`${name}=${v}`))
+        document.cookie = `${name}=${v}; path=/; max-age=31536000; samesite=lax`;
+    };
+    remember('km-tz', Intl.DateTimeFormat().resolvedOptions().timeZone);
+    remember('km-locale', navigator.language);
+  }, []);
+  useEffect(() => {
     resetStores();
     void usePreferences.persist.rehydrate();
     const { data } = browserSupabase().auth.onAuthStateChange(

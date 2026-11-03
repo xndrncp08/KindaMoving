@@ -102,6 +102,22 @@ not evidence that all interaction is instant. Earlier post-Lighthouse interactio
 samples failed viewport validation and were excluded; the cold navigation series
 above uses Lighthouse's own applied screen/throttle settings.
 
+**Tooling security follow-up:** the recorded comparison above used Lighthouse
+12.8.2 / Puppeteer 24.43.1. A final full development audit identified high
+advisories in that tooling, so the maintained harness now pins **Lighthouse
+13.5.0 / Puppeteer 25.16.0**, requiring Node >=22.19. This removes the introduced
+high findings without changing runtime dependencies or relabelling historical
+numbers. Current audit: **0 high/critical**, 16 existing moderate lint-chain
+findings; production dependencies: **0 known vulnerabilities**. CI now rejects
+high/critical advisories across the full dependency tree. No forced ESLint/Next
+downgrade or broad override was used. Lighthouse 13.6.0 was reviewed but adds
+moderate glob/Sentry advisories; 13.5.0 with patched Puppeteer avoids them.
+
+The current-toolchain cold-load and reveal compatibility probes pass; these are
+not substituted into the 12.8.2 comparison. Use one identical current toolchain
+on both revisions for a new comparison. Audit versions affect scores and tracing,
+so cross-version numbers must not be presented as an optimization gain.
+
 Sanitized per-trial numbers/settings: [phase5-lab.json](phase5-lab.json).
 Private raw traces/LHR can contain session data and stay ignored in `output/`;
 never upload them or Playwright Auth state as CI artifacts.
@@ -172,7 +188,19 @@ and Vercel Preview public config agree. Management project lookup and read-only
 SQL were denied for this exact project. No alternative project was changed.
 Scoped existing application credentials allowed Auth and data reads only.
 
-**Updated protected candidate:**
+**Current protected candidate (patched tooling):**
+[Phase 5 staging](https://kindamoving-staging-mlmenszrr-xander-rancaps-projects.vercel.app),
+`dpl_7KP4emrBxrTMCX9dxEfEE8VZFqET`, **READY / preview**, from archive
+`3c52688`. All three jobs, including the high/critical dependency gate, passed in
+[run 41578824242](https://github.com/xndrncp08/KindaMoving/actions/runs/41578824242).
+The latest candidate again returned authenticated health 200 and unauthenticated
+302 to Vercel SSO. Authenticated Chromium phone emulation again passed Home,
+Analyze keyboard tracing, planner restoration and Conditions; real versioned
+worker/style requests returned 200 and page errors were zero. Only development
+tooling and its CI guard changed after the first candidate. No production
+promotion, paid configuration or hosted reference-data change occurred.
+
+**First verified Phase 5 candidate:**
 [Phase 5 staging](https://kindamoving-staging-q8frkjayp-xander-rancaps-projects.vercel.app),
 `dpl_8nuNQV1Ho3SJLz5ctew739p3BFvv`, **READY / preview**. Deployed from the
 committed `c97215d` archive with the versioned staging config; no production

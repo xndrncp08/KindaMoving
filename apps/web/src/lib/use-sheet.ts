@@ -121,7 +121,12 @@ export function useSheet(initial: Snap = 'half') {
       onPointerDown,
       onPointerMove,
       onPointerUp,
-      onPointerCancel: onPointerUp,
+      // Browser scrolling/rotation can cancel a gesture; cancellation must not choose a new stop.
+      onPointerCancel: () => {
+        drag.current = null;
+        suppressClick.current = false;
+        apply(null);
+      },
       onKeyDown,
       onClick,
     },

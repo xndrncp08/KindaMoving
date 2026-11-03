@@ -8,7 +8,10 @@ import { VIEWPORTS, audit } from './mobile-audit';
  * test account (never a real user). Screenshots land in test-results/mobile.
  */
 const SHOTS = process.env.KM_SHOTS_DIR ?? 'test-results/mobile';
-const signedIn = !!process.env.KM_E2E_EMAIL && !!process.env.KM_E2E_PASSWORD;
+const privateState = process.env.KM_E2E_STATE;
+const signedIn =
+  !!privateState ||
+  (!!process.env.KM_E2E_EMAIL && !!process.env.KM_E2E_PASSWORD);
 const only = process.env.KM_PAGES?.split(',');
 
 const publicPages = { landing: '/', login: '/login', privacy: '/privacy' };
@@ -78,12 +81,15 @@ test.describe('mobile audit', () => {
     let state: string;
     let ids: Record<string, string> = {};
     test.beforeAll(async ({ browser }) => {
-      const page = await browser.newPage();
-      await page.goto('/login');
-      await page.getByLabel('Email').fill(process.env.KM_E2E_EMAIL!);
-      await page.getByLabel('Password').fill(process.env.KM_E2E_PASSWORD!);
-      await page.getByRole('button', { name: /log in/i }).click();
-      await page.waitForURL(/\/app/);
+      const page = await browser.newPage({ storageState: privateState });
+      if (privateState) await page.goto('/app');
+      else {
+        await page.goto('/login');
+        await page.getByLabel('Email').fill(process.env.KM_E2E_EMAIL!);
+        await page.getByLabel('Password').fill(process.env.KM_E2E_PASSWORD!);
+        await page.getByRole('button', { name: /log in/i }).click();
+        await page.waitForURL(/\/app/);
+      }
       const runs: { id: string; distance_m: number }[] = await page.evaluate(
         async () => (await fetch('/api/activities')).json(),
       );

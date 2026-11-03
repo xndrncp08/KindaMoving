@@ -91,3 +91,43 @@ Local web app + local analytics service against hosted Supabase (`yqzbsuandpdlvg
 Final local/CI counts and external blockers are recorded in [PHASE3_HANDOFF](PHASE3_HANDOFF.md). Two existing React Hook Form compiler warnings and the FastAPI/Starlette httpx deprecation warning remain unrelated to this change.
 
 `python scripts/check-analytics-package.py` builds a non-editable analytics wheel in a temporary directory and asserts the routing/readiness modules are included. CI runs it because editable installs/source-directory execution can mask omitted Python subpackages. The previously omitted routing subpackage was reproduced in a built wheel, then corrected through setuptools package discovery.
+
+## Phase 5 mobile regression
+
+Keep the original 210 viewport cases and seven phone flows. Five focused cases in
+`e2e/mobile-readiness.spec.ts` cover date hydration, map visibility/cooperative
+controls, keyboard chart tracing, planner sheet URL restoration, upload failure
+and persisted offline replay. Run against a production build on an **unused** port:
+
+```sh
+KM_E2E_URL=http://127.0.0.1:3015 KM_E2E_STATE=/private/path/synthetic-state.json \
+  npx playwright test e2e/mobile.spec.ts e2e/mobile-flows.spec.ts \
+  e2e/mobile-readiness.spec.ts --project=desktop --workers=3
+```
+
+Run from `apps/web`; the private state must come from the real Supabase SDK and a
+synthetic test identity, never a real user or hand-written cookie format. Password
+login remains supported via `KM_E2E_EMAIL`/`KM_E2E_PASSWORD`. Tests requiring a
+synthetic account skip in credential-free CI; they are not passing hosted flows.
+Auth state stays in memory; authenticated traces are off by default to keep session
+headers out of artifacts. The five new tests block service workers and unspecified writes so request
+interception cannot accidentally publish shared test reports. Their failed-upload
+and offline-replay successes are **intercepted browser tests**, not backend success.
+The offline case keeps connectivity failed until explicit reconnect, surviving
+reload via real browser IndexedDB, then asserts the same `client_id` is accepted
+once. Real server dedup/airplane mode remain isolated-staging/hardware gates.
+
+The committed chart-control screenshot uses deterministic map fixtures and a
+synthetic data account. Its macOS platform baseline must be reviewed before
+updates; a different OS needs its own reviewed baseline. Do not upload signed-in
+Playwright storage state/traces, raw Lighthouse reports, exact tracks or exports
+as public artifacts. `output/` and `test-results/` are ignored; keep private files 0600. Source fixture attribution remains in the analytics test-data README.
+
+Lab harness: `apps/web/scripts/mobile-lab.mjs` (pinned Lighthouse/Puppeteer),
+explicitly rejects development bundles and requires observed throttling commands.
+Use `apps/web/scripts/mobile-reveal.mjs` for separate widget initialization
+profiling: it verifies the viewport, hydration, identity and applied protocol
+commands without Lighthouse/axe scrolling side effects. It does not measure INP
+or completed tile rendering. No physical-device result is implied by these tools. Current counts,
+manual hardware worksheet and 15-workflow acceptance:
+[Phase 5](release/PHASE5_MOBILE_READINESS.md).

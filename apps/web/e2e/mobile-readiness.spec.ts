@@ -7,10 +7,17 @@ test.use({
   storageState: state,
   locale: 'en-CA',
   timezoneId: 'America/Edmonton',
+  // Service-worker fetches bypass Playwright routes. Never let a simulated write escape.
+  serviceWorkers: 'block',
 });
 test.skip(!state, 'A private synthetic-account state is required');
-test.beforeEach(async ({ page }, info) => {
+test.beforeEach(async ({ page, context }, info) => {
   test.skip(info.project.name !== 'desktop');
+  await context.route('**/api/**', (route) =>
+    ['GET', 'HEAD'].includes(route.request().method())
+      ? route.continue()
+      : route.abort('blockedbyclient'),
+  );
   // Deterministic map fixture for interaction/visual tests, never performance/hosted evidence.
   await page.route('https://tiles.openfreemap.org/styles/*', (route) =>
     route.fulfill({ json: { version: 8, sources: {}, layers: [] } }),
@@ -29,14 +36,22 @@ test('first authenticated visit and a remembered-date visit hydrate without erro
 }) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
+  // Deliberately differ from the server's calendar day; timers still run normally.
+  await page.clock.setFixedTime(new Date('2026-11-03T06:30:00Z'));
   await context.clearCookies({ name: /^km-(tz|locale)$/ });
   await page.goto('/app');
   await expect(page.locator('.week')).toBeVisible();
+  await expect(page.locator('.week-days [aria-current="date"]')).toContainText(
+    'Tue',
+  );
   expect(
     (await context.cookies()).some((cookie) => cookie.name === 'km-tz'),
   ).toBe(true);
   await page.reload();
   await expect(page.locator('.week')).toBeVisible();
+  await expect(page.locator('.week-days [aria-current="date"]')).toContainText(
+    'Tue',
+  );
   expect(errors).toEqual([]);
 });
 test('secondary map initializes on visibility and chart tracing works by keyboard', async ({
@@ -45,6 +60,7 @@ test('secondary map initializes on visibility and chart tracing works by keyboar
   const id = await run(page);
   await page.goto('/app/activities/' + id);
   await expect(page.locator('.run-map .maplibregl-canvas')).toHaveCount(0);
+  await page.locator('#streams-title').scrollIntoViewIfNeeded();
   const slider = page.getByRole('slider', { name: 'Trace run sample' });
   await expect(slider).toBeVisible();
   await slider.focus();
@@ -139,10 +155,13 @@ test('offline report survives a lost response and synchronizes once reconnected 
   await page.getByRole('button', { name: 'Use My Location' }).click();
   await expect(page.getByText(/At 51\.05320/)).toBeVisible();
   const bodies: Record<string, unknown>[] = [];
+  let reconnected = false;
+  let accepted = 0;
   await page.route('**/api/conditions', async (route) => {
     if (route.request().method() !== 'POST') return route.continue();
     bodies.push(route.request().postDataJSON());
-    if (bodies.length === 1) return route.abort('internetdisconnected');
+    if (!reconnected) return route.abort('internetdisconnected');
+    accepted++;
     return route.fulfill({ json: { ok: true } });
   });
   await page
@@ -154,9 +173,13 @@ test('offline report survives a lost response and synchronizes once reconnected 
   ).toBeVisible();
   // Reload discards client memory; the pending body must survive in IndexedDB.
   await page.reload();
+  await expect(
+    page.getByRole('status').filter({ hasText: 'waiting to send' }),
+  ).toBeVisible();
+  reconnected = true;
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
-  await expect.poll(() => bodies.length).toBe(2);
-  expect(bodies[0].client_id).toBe(bodies[1].client_id);
+  await expect.poll(() => accepted).toBe(1);
+  expect(new Set(bodies.map((body) => body.client_id)).size).toBe(1);
   await expect(
     page.getByRole('status').filter({ hasText: 'waiting to send' }),
   ).toHaveCount(0);

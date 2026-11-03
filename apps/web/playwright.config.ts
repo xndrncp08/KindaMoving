@@ -5,7 +5,11 @@ export default defineConfig({
   use: {
     launchOptions: { args: ['--enable-unsafe-swiftshader'] },
     baseURL: process.env.KM_E2E_URL ?? 'http://127.0.0.1:3000',
-    trace: 'retain-on-failure',
+    // Authenticated traces contain session headers; keep credential-free CI diagnostics only.
+    trace:
+      process.env.KM_E2E_STATE || process.env.KM_E2E_EMAIL
+        ? 'off'
+        : 'retain-on-failure',
   },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },

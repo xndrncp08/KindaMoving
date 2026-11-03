@@ -19,8 +19,10 @@ export default function Home() {
           <Link className="desktop-link" href="#features">
             The good stuff
           </Link>
-          <Link href="/login">Log in</Link>
-          <Button asChild>
+          <Link href="/login" className="nav-text">
+            Log in
+          </Link>
+          <Button asChild className="nav-cta">
             <Link href="/login?mode=signup">
               Find your stride <ArrowUpRight size={16} />
             </Link>

@@ -169,7 +169,7 @@ export function GhostReplay({
             legend={['route', 'runner', 'ghost']}
           />
           <Card>
-            <div className="row">
+            <div className="row ghost-controls">
               <Button onClick={() => setPlaying(!playing)}>
                 {playing ? 'Pause' : t >= last ? 'Replay' : 'Play'}
               </Button>
@@ -186,7 +186,7 @@ export function GhostReplay({
                   ))}
                 </select>
               </label>
-              <label style={{ flex: 1 }}>
+              <label className="scrub">
                 {duration(t)} / {duration(last)}
                 <Input
                   type="range"

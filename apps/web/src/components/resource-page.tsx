@@ -155,8 +155,8 @@ export function ResourcePage({
       </header>
       {intro}
       {name === 'activities' && <UploadForm userId={userId} />}
-      <div className="row">
-        <label style={{ flex: 1 }}>
+      <div className="row filters">
+        <label className="search">
           Search {title.toLowerCase()}
           <Input
             type="search"
@@ -323,7 +323,7 @@ export function ResourcePage({
                             </label>
                             <Button
                               variant="ghost"
-                              className="button-icon"
+                              className="hide-sm button-icon"
                               aria-label={`Edit ${String(r.title)}`}
                               onClick={() => {
                                 setEditing(r);
@@ -334,7 +334,7 @@ export function ResourcePage({
                             </Button>
                             <Button
                               variant="ghost"
-                              className="button-icon danger-icon"
+                              className="hide-sm button-icon danger-icon"
                               aria-label={`Delete ${String(r.title)}`}
                               onClick={() => {
                                 setEditing(r);

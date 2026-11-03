@@ -24,9 +24,27 @@ export function span(seconds: number) {
 export function day(
   value: string,
   opts: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' },
+  locale?: string,
 ) {
-  const d = new Date(value.length === 10 ? value + 'T12:00:00' : value);
-  return new Intl.DateTimeFormat(undefined, opts).format(d);
+  // A YYYY-MM-DD value is a calendar date, not an instant: format it in UTC so
+  // it reads the same on every device and on the server.
+  if (value.length === 10)
+    return new Intl.DateTimeFormat(locale, { ...opts, timeZone: 'UTC' }).format(
+      new Date(value + 'T12:00:00Z'),
+    );
+  return new Intl.DateTimeFormat(locale, opts).format(new Date(value));
+}
+/** Today's calendar date (YYYY-MM-DD) in a given IANA zone, or the device's. */
+export function today(zone?: string) {
+  return new Date().toLocaleDateString('en-CA', { timeZone: zone });
+}
+/** The Monday-to-Sunday dates of the week containing `date` (YYYY-MM-DD). */
+export function weekOf(date: string) {
+  const t = Date.parse(date + 'T00:00:00Z');
+  const monday = t - ((new Date(t).getUTCDay() + 6) % 7) * 86400000;
+  return Array.from({ length: 7 }, (_, i) =>
+    new Date(monday + i * 86400000).toISOString().slice(0, 10),
+  );
 }
 export function distance(metres: number, units = 'metric') {
   return `${(metres / (units === 'imperial' ? 1609.344 : 1000)).toFixed(2)} ${units === 'imperial' ? 'mi' : 'km'}`;

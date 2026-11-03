@@ -6,14 +6,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'sonner';
-import {
-  Button,
-  Card,
-  ErrorState,
-  Input,
-  Skeleton,
-  ConfirmButton,
-} from '@km/ui';
+import { LocateFixed } from 'lucide-react';
+import { Button, Card, ErrorState, Skeleton, ConfirmButton } from '@km/ui';
 import { api, conditionsQuery, keys } from '@/lib/queries';
 import { KINDS, type Assessment } from '@/lib/conditions';
 import { useMap } from '@/lib/stores';
@@ -153,7 +147,7 @@ export function ConditionsView({ userId }: { userId: string }) {
   const q = useQuery(
     conditionsQuery(userId, viewport.latitude, viewport.longitude),
   );
-  const { register, handleSubmit, reset, formState } = useForm<
+  const { register, handleSubmit, reset, formState, setValue, watch } = useForm<
     z.input<typeof form>,
     unknown,
     z.output<typeof form>
@@ -198,7 +192,7 @@ export function ConditionsView({ userId }: { userId: string }) {
     ...(pin ? [{ ...pin, kind: 'waypoint' as const }] : []),
   ];
   return (
-    <div className="planner">
+    <div className="planner conditions-layout">
       <div className="stack">
         <Card>
           <h2>Report a condition</h2>
@@ -217,37 +211,107 @@ export function ConditionsView({ userId }: { userId: string }) {
                 : toast.error('Tap the map to place the report.'),
             )}
           >
+            {/* Outdoors, gloved or tired: location in one tap, everything else
+                as large single-tap choices; typing is optional. */}
             <div className="row">
-              <label>
-                What
-                <select {...register('kind')}>
-                  {KINDS.map((k) => (
-                    <option key={k}>{k}</option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Severity
-                <select {...register('severity')}>
-                  <option value={1}>Minor</option>
-                  <option value={2}>Moderate</option>
-                  <option value={3}>Avoid</option>
-                </select>
-              </label>
-              <label>
-                Seen (minutes ago)
-                <Input type="number" {...register('minutes_ago')} />
-              </label>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  navigator.geolocation.getCurrentPosition(
+                    (p) =>
+                      setPin({
+                        lat: p.coords.latitude,
+                        lon: p.coords.longitude,
+                      }),
+                    () =>
+                      toast.error(
+                        'Location unavailable. Tap the map where you saw it instead.',
+                      ),
+                    { enableHighAccuracy: true, timeout: 10000 },
+                  )
+                }
+              >
+                <LocateFixed size={16} aria-hidden="true" />
+                Use My Location
+              </Button>
             </div>
+            <fieldset>
+              <legend>What</legend>
+              <div className="chips">
+                {KINDS.map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    className="chip"
+                    aria-pressed={watch('kind') === k}
+                    onClick={() => setValue('kind', k)}
+                  >
+                    {k.replace(/_/g, ' ')}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>How bad</legend>
+              <div className="chips">
+                {(
+                  [
+                    [1, 'Minor'],
+                    [2, 'Moderate'],
+                    [3, 'Avoid'],
+                  ] as const
+                ).map(([v, label]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className="chip"
+                    aria-pressed={Number(watch('severity')) === v}
+                    onClick={() => setValue('severity', v)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend>Seen</legend>
+              <div className="chips">
+                {(
+                  [
+                    [0, 'Just now'],
+                    [15, '15 min ago'],
+                    [60, '1 h ago'],
+                    [180, '3 h ago'],
+                  ] as const
+                ).map(([v, label]) => (
+                  <button
+                    key={v}
+                    type="button"
+                    className="chip"
+                    aria-pressed={Number(watch('minutes_ago')) === v}
+                    onClick={() => setValue('minutes_ago', v)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
             <label>
-              Details
-              <textarea maxLength={500} {...register('description')} />
+              Details (optional)
+              <textarea
+                maxLength={500}
+                autoComplete="off"
+                {...register('description')}
+              />
             </label>
             {formState.errors.minutes_ago && (
               <p className="field-error">Within the last 72 hours.</p>
             )}
             {report.error && <ErrorState message={report.error.message} />}
-            <Button disabled={report.isPending}>Share report</Button>
+            <Button disabled={report.isPending}>
+              {report.isPending ? 'Sharing…' : 'Share Report'}
+            </Button>
           </form>
         </Card>
         <p className="notice">

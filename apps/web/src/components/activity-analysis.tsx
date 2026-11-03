@@ -133,7 +133,9 @@ export function ActivityAnalysis({
               <th className="n hide-sm">Time</th>
               <th className="n">Pace</th>
               <th className="splitbar-col">
-                <span className="sr-only">Pace </span>vs average
+                <span className="sr-only">Pace </span>vs
+                <span className="hide-sm"> average</span>
+                <span className="sr-only"> average</span>
               </th>
               <th className="n">Avg HR</th>
               <th className="n hide-sm">Climb</th>
@@ -185,7 +187,26 @@ export function ActivityAnalysis({
   };
   return (
     <div className="stack analysis">
-      <p className="run-meta muted">
+      {/* Phones: jump between sections instead of scrolling a long page. */}
+      <nav className="section-nav" aria-label="Run sections" data-scroll-x>
+        {[
+          ['#summary', 'Summary'],
+          ['#streams-title', 'Streams'],
+          ...(a.track ? [['#map-title', 'Map']] : []),
+          ...(splits.isPending || km.length > 0 || laps.length > 1
+            ? [['#splits-title', 'Splits']]
+            : []),
+          ...(Object.keys(m.best_efforts ?? {}).length
+            ? [['#efforts-title', 'Efforts']]
+            : []),
+          ['#why-title', 'Context'],
+        ].map(([href, label]) => (
+          <a key={href} href={href} className="chip">
+            {label}
+          </a>
+        ))}
+      </nav>
+      <p className="run-meta muted" id="summary">
         {a.source === 'coros' ? 'COROS' : 'File import'} · started{' '}
         <span className="num">{localStart(a)}</span>
         {m.timezone_assumed && ' · time zone assumed from your browser'}
@@ -304,7 +325,7 @@ export function ActivityAnalysis({
         </section>
         {a.track && (
           <section aria-labelledby="map-title" className="run-map">
-            <h2 id="map-title" className="sr-only">
+            <h2 id="map-title" className="sr-only anchor">
               Route map
             </h2>
             <RunMap
@@ -317,6 +338,13 @@ export function ActivityAnalysis({
           </section>
         )}
       </div>
+      {splits.isPending && (
+        // Rendered while loading so the Splits jump link always has a target.
+        <section aria-labelledby="splits-title" className="stack">
+          <h2 id="splits-title">Splits</h2>
+          <Skeleton />
+        </section>
+      )}
       {(km.length > 0 || laps.length > 1) && (
         <section aria-labelledby="splits-title" className="stack">
           <h2 id="splits-title">Splits</h2>

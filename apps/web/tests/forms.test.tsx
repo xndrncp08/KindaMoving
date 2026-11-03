@@ -126,6 +126,24 @@ it('saves onboarding with explicit privacy preferences', async () => {
     notifications: false,
   });
 });
+it('takes the weekly goal in kilometres and stores metres', async () => {
+  wrap(<ProfileForm userId="runner" />);
+  await screen.findByLabelText('Preferred name');
+  fireEvent.change(screen.getByLabelText('Preferred name'), {
+    target: { value: 'Alex' },
+  });
+  fireEvent.change(screen.getByLabelText('Weekly distance goal (km)'), {
+    target: { value: '12.5' },
+  });
+  fireEvent.click(screen.getByRole('button', { name: 'Save preferences' }));
+  await waitFor(() =>
+    expect(
+      vi.mocked(fetch).mock.calls.some((c) => c[1]?.method === 'PUT'),
+    ).toBe(true),
+  );
+  const call = vi.mocked(fetch).mock.calls.find((c) => c[1]?.method === 'PUT')!;
+  expect(JSON.parse(String(call[1]?.body)).weekly_distance_m).toBe(12500);
+});
 it('opens and closes accessible mobile navigation', async () => {
   wrap(
     <Shell userId="runner">

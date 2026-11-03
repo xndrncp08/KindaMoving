@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -46,6 +47,8 @@ function Editor({
     register,
     handleSubmit,
     reset,
+    setValue,
+    watch,
     formState: { errors, isDirty },
   } = useForm({
     resolver: zodResolver(profileSchema),
@@ -63,6 +66,10 @@ function Editor({
     },
   });
   useUnsaved(isDirty);
+  const imperial = watch('units') === 'imperial';
+  const factor = imperial ? 1609.344 : 1000;
+  const goalM = Number(watch('weekly_distance_m') || 0);
+  const [goalText, setGoalText] = useState<string | null>(null);
   const mutation = useMutation({
     mutationFn: (values: unknown) =>
       api('profile', { method: 'PUT', body: JSON.stringify(values) }),
@@ -109,12 +116,28 @@ function Editor({
           </select>
         </label>
         <label>
-          Weekly distance goal (metres)
+          Weekly distance goal ({imperial ? 'mi' : 'km'})
+          {/* Stored in metres; runners think in their own units. The text is
+              local while typing so "12." isn't rewritten mid-entry. */}
           <Input
             type="number"
+            inputMode="decimal"
             min="0"
-            max="500000"
-            {...register('weekly_distance_m')}
+            step="0.5"
+            autoComplete="off"
+            value={
+              goalText ??
+              (goalM ? String(Math.round((goalM / factor) * 10) / 10) : '')
+            }
+            onChange={(e) => {
+              setGoalText(e.target.value);
+              setValue(
+                'weekly_distance_m',
+                Math.round(Number(e.target.value || 0) * factor),
+                { shouldDirty: true, shouldValidate: true },
+              );
+            }}
+            onBlur={() => setGoalText(null)}
           />
         </label>
         <label>

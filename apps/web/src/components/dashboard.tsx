@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowUpRight, Map, Upload } from 'lucide-react';
 import {
@@ -16,21 +17,21 @@ import {
   summaryQuery,
   overviewQuery,
 } from '@/lib/queries';
-import { day, distance, duration, pace, span } from '@/lib/metrics';
+import {
+  day,
+  distance,
+  duration,
+  pace,
+  span,
+  today as todayIn,
+  weekOf,
+} from '@/lib/metrics';
 import { useDashboard } from '@/lib/stores';
+import { HomeStatus } from './home-status';
 
-const isoDay = (d: Date) => d.toLocaleDateString('en-CA');
-function weekDays() {
-  const monday = new Date();
-  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
-  return Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
-    return isoDay(d);
-  });
-}
-const km = (m: number, units?: string) =>
-  (m / (units === 'imperial' ? 1609.344 : 1000)).toLocaleString(undefined, {
+const noop = () => () => {};
+const km = (m: number, units?: string, locale?: string) =>
+  (m / (units === 'imperial' ? 1609.344 : 1000)).toLocaleString(locale, {
     maximumFractionDigits: 1,
     minimumFractionDigits: 1,
   });
@@ -40,16 +41,37 @@ const paceText = (m: number, s: number, units?: string) => {
   return `${duration(units === 'imperial' ? p * 1.609344 : p)} /${units === 'imperial' ? 'mi' : 'km'}`;
 };
 
-export function Dashboard({ userId }: { userId: string }) {
+export function Dashboard({
+  userId,
+  zone,
+  locale,
+  serverToday,
+}: {
+  userId: string;
+  /** The calendar date the server rendered with; the first client render reuses it. */
+  serverToday?: string;
+  /** The runner's zone/locale (remembered cookie) so server and client agree. */
+  zone?: string;
+  locale?: string;
+}) {
   const activities = useQuery(recordsQuery(userId, 'activities'));
   const shoes = useQuery(recordsQuery(userId, 'shoes'));
   const workouts = useQuery(recordsQuery(userId, 'workouts'));
   const profile = useQuery(profileQuery(userId));
   const summary = useQuery(summaryQuery(userId));
   const overview = useQuery(overviewQuery(userId));
+  // "Today" is the runner's calendar date. Hydration uses the date the server
+  // rendered with (none on a first visit: skeleton), then React switches to the
+  // browser's own date. They can differ near midnight (clocks or tz databases,
+  // e.g. Alberta's 2026 change) without ever causing a hydration mismatch.
+  const today = useSyncExternalStore(
+    noop,
+    () => todayIn(zone),
+    () => serverToday ?? null,
+  );
   const showGear = useDashboard((s) => s.showGear);
   const toggle = useDashboard((s) => s.toggleGear);
-  if (activities.isPending || profile.isPending || summary.isPending)
+  if (!today || activities.isPending || profile.isPending)
     return (
       <div className="stack">
         <Skeleton />
@@ -78,15 +100,15 @@ export function Dashboard({ userId }: { userId: string }) {
   const runs = activities.data || [];
   const units = profile.data?.units;
   const unit = units === 'imperial' ? 'mi' : 'km';
-  const weekly = summary.data?.weekly_distance_m || 0;
   const goal = profile.data?.weekly_distance_m || 0;
-  const days = weekDays();
-  const today = isoDay(new Date());
+  const days = weekOf(today);
   const perDay = days.map((d) =>
     runs
       .filter((r) => r.started_at?.slice(0, 10) === d)
       .reduce((s, r) => s + r.distance_m, 0),
   );
+  // Same Monday-start local week as the bars below, so the two always agree.
+  const weekly = perDay.reduce((sum, m) => sum + m, 0);
   const peak = Math.max(...perDay, goal / 5, 1);
   const last = runs[0];
   // The list selects every column; planned_distance_m comes from the training migration.
@@ -105,20 +127,25 @@ export function Dashboard({ userId }: { userId: string }) {
       <header className="page-head row between">
         <div>
           <p className="eyebrow" suppressHydrationWarning>
-            {day(today, { weekday: 'long', month: 'long', day: 'numeric' })}
+            {day(
+              today,
+              { weekday: 'long', month: 'long', day: 'numeric' },
+              locale,
+            )}
           </p>
           <h1 className="page-title">
             Hey, {profile.data?.preferred_name || 'runner'}.
           </h1>
         </div>
-        <div className="row">
+        {/* On phones these live in the tab bar and header; desktop keeps them here. */}
+        <div className="row hide-sm">
           <Button asChild variant="outline">
             <Link href="/app/routes/plan">
               <Map size={16} aria-hidden="true" />
               Plan a Route
             </Link>
           </Button>
-          <Button asChild className="hide-sm">
+          <Button asChild>
             <Link href="/app/activities#import">
               <Upload size={16} aria-hidden="true" />
               Import Run
@@ -134,14 +161,14 @@ export function Dashboard({ userId }: { userId: string }) {
               This week · since Monday
             </h2>
             <p className="hero-num num">
-              {km(weekly, units)}
+              {km(weekly, units, locale)}
               <span className="unit">{unit}</span>
             </p>
             {goal > 0 ? (
               <p className="muted">
-                {pct}% of your {km(goal, units)} {unit} goal
+                {pct}% of your {km(goal, units, locale)} {unit} goal
                 {weekly < goal &&
-                  ` · ${km(goal - weekly, units)} ${unit} to go`}
+                  ` · ${km(goal - weekly, units, locale)} ${unit} to go`}
               </p>
             ) : (
               <p className="muted">
@@ -180,7 +207,7 @@ export function Dashboard({ userId }: { userId: string }) {
             aria-valuemin={0}
             aria-valuemax={goal}
             aria-valuenow={Math.min(weekly, goal)}
-            aria-valuetext={`${km(weekly, units)} of ${km(goal, units)} ${unit}`}
+            aria-valuetext={`${km(weekly, units, locale)} of ${km(goal, units, locale)} ${unit}`}
           >
             <span style={{ transform: `scaleX(${pct / 100})` }} />
           </div>
@@ -200,17 +227,17 @@ export function Dashboard({ userId }: { userId: string }) {
                 aria-hidden="true"
               />
               <span className="num day-km">
-                {perDay[i] ? km(perDay[i], units) : '–'}
+                {perDay[i] ? km(perDay[i], units, locale) : '–'}
               </span>
               <span className="day-name" suppressHydrationWarning>
-                {day(d, { weekday: 'short' })}
+                {day(d, { weekday: 'short' }, locale)}
               </span>
             </li>
           ))}
         </ol>
       </section>
 
-      <div className="grid two">
+      <div className="grid two home-pair">
         <Card className="next-up">
           <p className="eyebrow">Next up</p>
           {next ? (
@@ -221,11 +248,15 @@ export function Dashboard({ userId }: { userId: string }) {
               <p className="muted" suppressHydrationWarning>
                 {next.scheduled_on === today
                   ? 'Today'
-                  : day(next.scheduled_on, {
-                      weekday: 'long',
-                      month: 'short',
-                      day: 'numeric',
-                    })}
+                  : day(
+                      next.scheduled_on,
+                      {
+                        weekday: 'long',
+                        month: 'short',
+                        day: 'numeric',
+                      },
+                      locale,
+                    )}
                 {next.planned_distance_m
                   ? ` · ${distance(next.planned_distance_m, units)}`
                   : ''}
@@ -235,15 +266,15 @@ export function Dashboard({ userId }: { userId: string }) {
               </Button>
             </>
           ) : (
-            <>
-              <h2>Nothing scheduled</h2>
-              <p className="muted">
-                Build a plan around your race distance or add a single workout.
-              </p>
-              <Button asChild variant="outline">
-                <Link href="/app/training/plan">Build a Plan</Link>
-              </Button>
-            </>
+            <p className="next-empty">
+              <span>
+                <strong>Nothing scheduled.</strong>{' '}
+                <span className="muted">Plan around your race distance.</span>
+              </span>
+              <Link href="/app/training/plan" className="link-arrow">
+                Build a Plan <ArrowUpRight size={14} aria-hidden="true" />
+              </Link>
+            </p>
           )}
         </Card>
         <Card className="last-run">
@@ -257,7 +288,7 @@ export function Dashboard({ userId }: { userId: string }) {
                 <div>
                   <dt>Distance</dt>
                   <dd className="num">
-                    {km(last.distance_m, units)}
+                    {km(last.distance_m, units, locale)}
                     <span className="unit">{unit}</span>
                   </dd>
                 </div>
@@ -308,8 +339,10 @@ export function Dashboard({ userId }: { userId: string }) {
         </Card>
       </div>
 
+      <HomeStatus userId={userId} />
+
       {runs.length > 1 && (
-        <section aria-labelledby="recent-title" className="stack">
+        <section aria-labelledby="recent-title" className="stack recent">
           <div className="row between">
             <h2 id="recent-title">Recent runs</h2>
             <Link href="/app/activities" className="link-arrow">
@@ -333,16 +366,20 @@ export function Dashboard({ userId }: { userId: string }) {
                   <tr key={r.id}>
                     <td suppressHydrationWarning>
                       <Link href={'/app/activities/' + r.id}>
-                        {day(r.started_at, {
-                          weekday: 'short',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
+                        {day(
+                          r.started_at,
+                          {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                          },
+                          locale,
+                        )}
                       </Link>
                     </td>
                     <td className="truncate-cell hide-sm">{r.title}</td>
                     <td className="n">
-                      {km(r.distance_m, units)} {unit}
+                      {km(r.distance_m, units, locale)} {unit}
                     </td>
                     <td className="n">
                       {paceText(r.distance_m, r.moving_s ?? r.elapsed_s, units)}
@@ -363,7 +400,7 @@ export function Dashboard({ userId }: { userId: string }) {
         </section>
       )}
 
-      <section aria-labelledby="gear-title" className="stack">
+      <section aria-labelledby="gear-title" className="stack shoes">
         <div className="row between">
           <h2 id="gear-title">Shoe rotation</h2>
           <Button variant="ghost" onClick={toggle} aria-expanded={showGear}>

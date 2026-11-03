@@ -217,6 +217,21 @@ p {
 summary {
   cursor: pointer;
   font-weight: 600;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  list-style: none;
+}
+summary::before {
+  content: '▸';
+  transition: transform var(--dur-1) var(--ease-out);
+}
+details[open] > summary::before {
+  transform: rotate(90deg);
+}
+summary::-webkit-details-marker {
+  display: none;
 }
 hr {
   border: 0;
@@ -247,8 +262,11 @@ table,
   position: absolute;
   width: 1px;
   height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
   overflow: hidden;
-  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
   white-space: nowrap;
 }
 
@@ -343,6 +361,7 @@ input[type='range'].input {
   border: 0;
   background: none;
   padding: 0;
+  min-height: 44px; /* the whole row is the touch target, not the 4px track */
   accent-color: var(--accent-strong);
 }
 input[type='file'].input {
@@ -426,7 +445,7 @@ legend {
 }
 .tabs button,
 .segmented button {
-  min-height: 38px;
+  min-height: 44px;
   padding: 0.4rem 0.9rem;
   border: 0;
   border-radius: 6px;
@@ -628,6 +647,9 @@ legend {
 
 /* Tables: numbers right-aligned in tabular figures */
 .table-scroll {
+  /* Positioned so visually-hidden (absolute) labels inside stay clipped here
+     instead of widening the whole page on phones. */
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
@@ -710,7 +732,7 @@ th.n {
   align-items: center;
   gap: var(--s-3);
   padding: 0 var(--s-3);
-  min-height: 40px;
+  min-height: 44px;
   border-radius: var(--r-md);
   color: var(--ink-2);
   font-size: var(--text-sm);
@@ -1048,6 +1070,12 @@ th.n {
   max-width: 1280px;
   margin: auto;
   padding: 0 max(var(--s-4), 4vw);
+}
+.site-nav .nav-text {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--s-2);
 }
 .site-nav {
   display: flex;
@@ -1675,21 +1703,32 @@ footer {
   padding: var(--s-2) var(--s-4);
   border-radius: var(--r-md);
 }
+/* Phones: the map is the screen. The workspace is fixed from the top edge to
+   the tab bar (dynamic viewport, so browser chrome changes never leave a gap);
+   the brand header steps aside on this page only. */
 @media (max-width: 720px) {
-  .workspace {
-    height: calc(100dvh - 61px - var(--tabbar) - var(--safe-b));
+  body:has(.workspace) .mobile-header {
+    display: none;
   }
-  /* Bottom sheet: the map stays visible above it */
-  .workspace-panel,
-  .workspace-panel[data-open='false'] {
-    top: auto;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    width: 100%;
-    max-height: 62%;
-    border-radius: var(--r-lg) var(--r-lg) 0 0;
-    border-bottom: 0;
+  .workspace {
+    position: fixed;
+    inset: 0 0 calc(var(--tabbar) + var(--safe-b)) 0;
+    height: auto;
+    z-index: 20;
+    container-type: size;
+  }
+  .map-tools {
+    top: calc(env(safe-area-inset-top) + var(--s-3));
+    left: calc(env(safe-area-inset-left) + var(--s-3));
+    right: auto;
+  }
+  .workspace .maplibregl-ctrl-top-right {
+    top: calc(env(safe-area-inset-top) + var(--s-1));
+    right: env(safe-area-inset-right);
+  }
+  .panel-handle {
+    position: relative;
+    padding-top: var(--s-4);
   }
   .panel-handle::before {
     content: '';
@@ -1702,14 +1741,69 @@ footer {
     border-radius: 2px;
     background: var(--line-strong);
   }
-  .panel-handle {
-    position: relative;
-    padding-top: var(--s-4);
+}
+/* Portrait phones: a three-stop bottom sheet. Its height never animates; the
+   sheet is full height and slides (transform), while the body is capped to the
+   visible part so its last item is always reachable by scrolling. */
+@media (max-width: 720px) and (orientation: portrait) {
+  .workspace-panel,
+  .workspace-panel[data-open='false'] {
+    --visible: 50cqh;
+    top: auto;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    height: calc(100cqh - 64px);
+    border-radius: var(--r-lg) var(--r-lg) 0 0;
+    border-bottom: 0;
+    transform: translateY(
+      calc(100cqh - 64px - var(--sheet-drag, var(--visible)))
+    );
+    transition: transform var(--dur-3) var(--ease-out);
   }
+  .workspace-panel[data-snap='peek'] {
+    --visible: 72px;
+  }
+  .workspace-panel[data-snap='full'] {
+    --visible: calc(100cqh - 64px);
+  }
+  .workspace-panel[style*='--sheet-drag'] {
+    transition: none;
+  }
+  .workspace-panel .panel-body {
+    flex: none;
+    max-height: calc(var(--sheet-drag, var(--visible)) - 60px);
+  }
+  .panel-handle {
+    touch-action: none; /* the handle drags the sheet; the map keeps its gestures */
+    cursor: grab;
+  }
+}
+/* Landscape phones: too short for a sheet, so the panel docks to the side. */
+@media (max-width: 720px) and (orientation: landscape) {
+  .workspace-panel,
+  .workspace-panel[data-open='false'] {
+    top: var(--s-2);
+    bottom: var(--s-2);
+    left: max(var(--s-2), env(safe-area-inset-left));
+    width: min(340px, 55%);
+  }
+  .workspace-panel[data-open='false'] {
+    bottom: auto;
+  }
+  /* Tools stack in a column just right of the docked panel, clear of the
+     zoom controls on the right edge. */
   .map-tools {
-    top: var(--s-3);
-    left: var(--s-3);
-    right: auto;
+    top: var(--s-2);
+    left: calc(
+      max(var(--s-2), env(safe-area-inset-left)) + min(340px, 55%) + var(--s-2)
+    );
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .panel-handle::before {
+    display: none;
   }
 }
 
@@ -1883,6 +1977,8 @@ footer {
 .compare-toggle {
   display: inline-flex;
   min-height: 44px;
+  min-width: 44px;
+  justify-content: center;
   padding-right: var(--s-2);
   font-weight: 500;
 }
@@ -1891,4 +1987,343 @@ footer {
 }
 .danger-icon:hover:not(:disabled) {
   background: var(--danger-soft);
+}
+
+/* While typing, the keyboard owns the bottom of the screen: the tab bar would
+   otherwise ride on top of it and cover the field being edited. */
+@media (max-width: 720px) {
+  body:has(
+      main
+        input:not(
+          [type='checkbox'],
+          [type='radio'],
+          [type='range'],
+          [type='file']
+        ):focus,
+      main textarea:focus,
+      main select:focus
+    )
+    .tabbar {
+    display: none;
+  }
+}
+
+@media (max-width: 380px) {
+  /* The hero carries the same call to action; the header keeps brand + log in. */
+  .site-nav .nav-cta {
+    display: none;
+  }
+}
+
+/* ───────────────────────── KM Home: status strip + phone order ───────────────────────── */
+.status-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--s-2);
+}
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 56px;
+  padding: var(--s-2) var(--s-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  transition: border-color var(--dur-1) var(--ease-out);
+}
+.status-item:hover {
+  border-color: var(--line-strong);
+}
+.status-item > svg {
+  flex: none;
+  color: var(--muted);
+}
+.status-item > span {
+  display: grid;
+  min-width: 0;
+}
+.status-item .eyebrow {
+  margin: 0;
+}
+.status-value {
+  font-weight: 650;
+  font-size: var(--text-sm);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 720px) {
+  /* Glance order on phones: what's next, this week, last run, status, history.
+     display: contents lets the two-up desktop pair join the parent's order. */
+  .home .home-pair {
+    display: contents;
+  }
+  .home > .page-head {
+    order: 0;
+    margin-bottom: 0;
+  }
+  .home .next-up {
+    order: 1;
+  }
+  .home .week {
+    order: 2;
+  }
+  .home .last-run {
+    order: 3;
+  }
+  .home .status-strip {
+    order: 4;
+  }
+  .home .recent {
+    order: 5;
+  }
+  .home .shoes {
+    order: 6;
+  }
+  .home .page-title {
+    font-size: var(--text-xl);
+  }
+  .next-up {
+    padding: var(--s-3) var(--s-4);
+  }
+  .next-up h2 {
+    font-size: var(--text-md);
+  }
+  .next-up .button {
+    margin-top: 0;
+  }
+  .week {
+    gap: var(--s-4);
+  }
+  .week-stats dd.num {
+    font-size: var(--text-md);
+  }
+  .week-stats dd.muted {
+    font-size: var(--text-xs);
+  }
+  .stat-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-2) var(--s-3);
+  }
+  .stat-strip dd {
+    font-size: var(--text-md);
+  }
+}
+@media (max-width: 360px) {
+  .status-strip {
+    grid-template-columns: 1fr;
+  }
+}
+.next-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-3);
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+/* Chips: one-tap choices that replace typing (distances, kinds, quick picks). */
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-2);
+}
+.chip {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-pill);
+  background: var(--surface);
+  font-weight: 600;
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  transition:
+    background-color var(--dur-1) var(--ease-out),
+    border-color var(--dur-1) var(--ease-out);
+}
+.chip:hover {
+  border-color: var(--ink);
+}
+.chip[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+.prefs {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.prefs[open] {
+  padding-bottom: var(--s-3);
+}
+.prefs > summary {
+  flex-wrap: wrap;
+}
+.prefs-summary {
+  font-weight: 400;
+  font-size: var(--text-sm);
+  margin-left: auto;
+}
+.prefs > .form-grid {
+  margin-bottom: var(--s-3);
+}
+
+/* ───────────────────────── KM Analyze on phones ───────────────────────── */
+.section-nav {
+  display: none;
+}
+/* A horizontal touch on a chart scrubs the synced cursor; vertical swipes
+   still scroll the page. */
+.streams .recharts-wrapper {
+  touch-action: pan-y;
+}
+.analysis [id] {
+  scroll-margin-top: 7.5rem;
+}
+@media (max-width: 720px) {
+  .section-nav {
+    position: sticky;
+    top: calc(max(var(--s-2), env(safe-area-inset-top)) + 53px);
+    z-index: 15;
+    display: flex;
+    gap: var(--s-2);
+    margin: 0 calc(var(--s-4) * -1);
+    padding: var(--s-2) var(--s-4);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    background: color-mix(in srgb, var(--bg) 94%, transparent);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  .section-nav .chip {
+    display: inline-flex;
+    align-items: center;
+    flex: none;
+    text-decoration: none;
+  }
+  .analysis > .insights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-3);
+  }
+  .insight-value {
+    font-size: var(--text-md);
+  }
+  .streams figcaption {
+    padding-left: 0;
+  }
+}
+@media (max-width: 360px) {
+  .analysis > .insights {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 720px) {
+  /* Phone tables: tighter cells so four columns fit 320px without page scroll. */
+  th,
+  td {
+    padding: 0.6rem var(--s-2);
+  }
+  th:first-child,
+  td:first-child {
+    padding-left: var(--s-3);
+  }
+  th:last-child,
+  td:last-child {
+    padding-right: var(--s-3);
+  }
+  .splitbar-col {
+    width: auto;
+    min-width: 0;
+  }
+  .splitbar {
+    width: calc(100% - 3.4rem);
+    min-width: 56px;
+  }
+  .splitbar-label {
+    width: 3.2rem;
+  }
+}
+
+/* ───────────────────────── Module phone layouts ───────────────────────── */
+.filters .search {
+  flex: 3 1 220px;
+}
+.ghost-controls .scrub {
+  flex: 1 1 200px;
+}
+@media (max-width: 720px) {
+  /* Ghost: the scrubber gets the full width; Play stays under the thumb. */
+  .ghost-controls .scrub {
+    flex-basis: 100%;
+    order: -1;
+  }
+  .ghost-controls > .button {
+    flex: 1 1 auto;
+  }
+  /* Training week: a vertical agenda instead of seven 140px columns. */
+  .calendar {
+    grid-template-columns: 1fr;
+    overflow: visible;
+  }
+  .day {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--s-2);
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: var(--s-2) var(--s-3);
+  }
+  .day:last-child {
+    border-bottom: 0;
+  }
+  .day .eyebrow {
+    margin: 0;
+    grid-row: 1 / span 9;
+  }
+  .day a {
+    margin: 0;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+  }
+  .day:not(:has(a))::after {
+    content: 'Rest';
+    color: var(--muted);
+    font-size: var(--text-sm);
+  }
+  /* Conditions: the map comes first so "tap the map" makes sense. */
+  .conditions-layout > :last-child,
+  .conditions-layout > .map-container {
+    order: -1;
+  }
+  .conditions-layout .map-container {
+    height: 42vh;
+  }
+}
+/* Native file pickers keep the platform chooser (camera roll, Files, Drive)
+   but look like our buttons and are a full-width, thumb-sized target. */
+input[type='file'].input {
+  min-height: 56px;
+  padding: var(--s-2);
+  font-size: var(--text-sm);
+  color: var(--muted);
+  cursor: pointer;
+}
+input[type='file'].input::file-selector-button {
+  min-height: 40px;
+  margin-right: var(--s-3);
+  padding: 0 var(--s-4);
+  border: 1px solid var(--ink);
+  border-radius: var(--r-md);
+  background: var(--ink);
+  color: var(--bg);
+  font: inherit;
+  font-weight: 650;
+  cursor: pointer;
 }

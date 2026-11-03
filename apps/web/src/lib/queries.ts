@@ -23,10 +23,8 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   }
   return response.status === 204 ? (undefined as T) : response.json();
 }
-export const keys = {
-  user: (id: string) => ['user', id] as const,
-  resource: (id: string, name: string) => ['user', id, name] as const,
-};
+import { keys } from './query-keys';
+export { keys };
 export function recordsQuery<R extends Resource>(id: string, name: R) {
   return queryOptions({
     queryKey: keys.resource(id, name),

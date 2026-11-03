@@ -55,3 +55,5 @@ npx playwright install chromium && npm run test:e2e
 - [Phase 1 handoff](docs/CLAUDE_HANDOFF.md)
 
 This is a verified foundation, not a deployed public service. Live Supabase configuration, SMTP, operational policies and integration acceptance remain launch requirements.
+
+Phase 6 status and exact isolation/operator acceptance: [Phase 6 report](docs/release/PHASE6_BETA_READINESS.md). Private beta remains blocked.

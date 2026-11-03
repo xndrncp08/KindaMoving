@@ -82,3 +82,35 @@ describe('offline outbox', () => {
     expect(await allFor('drafts', 'u2')).toHaveLength(0);
   });
 });
+
+import { cancelOutbox } from '@/lib/offline/outbox';
+it('aborts old-account replay and never sends its next item after identity changes', async () => {
+  fetchMock.mockRejectedValue(new TypeError('offline'));
+  await submitReport('u1', body('old-a'));
+  await submitReport('u1', body('old-b'));
+  let finish: (r: Response) => void = () => {};
+  fetchMock.mockReset();
+  fetchMock.mockImplementation(
+    () =>
+      new Promise<Response>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  const old = flush('u1');
+  const { waitFor } = await import('@testing-library/react');
+  await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+  cancelOutbox();
+  expect(fetchMock.mock.calls[0][1].signal.aborted).toBe(true);
+  finish(ok());
+  expect(await old).toBe(0);
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+});
+
+it('does not overwrite new-account counts when an old dismissal completes', async () => {
+  const { dismiss } = await import('@/lib/offline/outbox');
+  const old = dismiss('u1', 'old-rejected');
+  cancelOutbox();
+  useOffline.getState().set({ pending: 5 });
+  await old;
+  expect(useOffline.getState().pending).toBe(5);
+});

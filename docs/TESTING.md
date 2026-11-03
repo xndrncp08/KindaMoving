@@ -141,3 +141,7 @@ The maintained mobile lab uses Lighthouse 13.5.0 and Puppeteer 25.16.0 (Node
 > patched toolchain removes newly identified high development advisories. The full
 > audit returns the existing 16 moderate ESLint/minimatch-chain findings and no
 > high/critical findings; the production-only audit is clean.
+
+## Phase 6 boundaries
+
+New regressions cover staging project/DSN matching, forbidden deployment overrides, invalid HTTP-200 compute content, cancellation, failed export admission, account-scoped outbox replay, readiness deadlines, cache identity and TRUNCATE privileges. `scripts/accept-routing.py` prepares compute-only hosted pilot acceptance after approval. Current local/hosted/skipped distinctions are in [Phase 6](release/PHASE6_BETA_READINESS.md). No shared Auth sessions or destructive hosted tests are authorized by a passing local test.

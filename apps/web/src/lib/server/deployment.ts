@@ -3,6 +3,22 @@ export function deploymentErrors(
   env: Record<string, string | undefined> = process.env,
 ) {
   const errors: string[] = [];
+  if (
+    env.KM_DEPLOYMENT &&
+    !['development', 'production', 'staging'].includes(env.KM_DEPLOYMENT)
+  )
+    errors.push('KM_DEPLOYMENT is unsupported');
+  if (env.KM_DEPLOYMENT === 'staging') {
+    const ref = env.KM_STAGING_SUPABASE_REF ?? '';
+    if (
+      !/^[a-z0-9]{20}$/.test(ref) ||
+      ref === 'yqzbsuandpdlvgtgnwln' ||
+      env.NEXT_PUBLIC_SUPABASE_URL !== `https://${ref}.supabase.co`
+    )
+      errors.push(
+        'Staging requires its own explicitly selected Supabase project',
+      );
+  }
   for (const key of [
     'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
     'SUPABASE_SECRET_KEY',

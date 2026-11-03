@@ -176,3 +176,26 @@ it('clears retention pointers only after successful storage deletion', async () 
   expect(response.status).toBe(200);
   expect(update).toHaveBeenCalledWith({ annotated_path: null });
 });
+
+it('rejects shared or mismatched staging projects without exposing credentials', () => {
+  const isolated = 'abcdefghijklmnopqrst';
+  expect(
+    deploymentErrors({
+      ...good,
+      KM_DEPLOYMENT: 'staging',
+      KM_STAGING_SUPABASE_REF: isolated,
+      NEXT_PUBLIC_SUPABASE_URL: `https://${isolated}.supabase.co`,
+    }),
+  ).toEqual([]);
+  for (const ref of ['', 'yqzbsuandpdlvgtgnwln', isolated])
+    expect(
+      deploymentErrors({
+        ...good,
+        KM_DEPLOYMENT: 'staging',
+        KM_STAGING_SUPABASE_REF: ref,
+      }).length,
+    ).toBeGreaterThan(0);
+  expect(deploymentErrors({ ...good, KM_DEPLOYMENT: 'typo' })).toContain(
+    'KM_DEPLOYMENT is unsupported',
+  );
+});

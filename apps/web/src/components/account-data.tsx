@@ -1,4 +1,5 @@
 'use client';
+import { cancelOutbox } from '@/lib/offline/outbox';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button, Dialog, ErrorState, Input } from '@km/ui';
@@ -16,6 +17,7 @@ export function AccountData() {
         body: JSON.stringify({ confirm: typed }),
       }),
     onSuccess: async () => {
+      cancelOutbox();
       client.clear();
       resetStores();
       await purgeOtherUsers(null);

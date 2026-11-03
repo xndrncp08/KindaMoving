@@ -8,6 +8,7 @@ the same start reuse one in-memory graph.
 from __future__ import annotations
 
 import json
+import hashlib
 import math
 import os
 import threading
@@ -31,13 +32,15 @@ def load(lat: float, lon: float, radius_m: float, dsn: str | None = None) -> Gra
     if not dsn:
         raise RuntimeError("NETWORK_DATABASE_URL is not configured")
     radius_m = min(max(radius_m, 1000.0), 15000.0)
-    key = (round(lat / 0.02), round(lon / 0.03), int(radius_m // 2500 + 1))
+    # A configuration/role change must never reuse a graph from another database.
+    identity = hashlib.sha256(dsn.encode()).digest()
+    key = (identity, round(lat / 0.02), round(lon / 0.03), int(radius_m // 2500 + 1))
     with _lock:
         if key in _cache:
             _cache.move_to_end(key)
             return _cache[key]
     # Load around the tile centre with the bucketed radius so cache hits cover the request.
-    clat, clon, r = key[0] * 0.02, key[1] * 0.03, key[2] * 2500 + 2500
+    clat, clon, r = key[1] * 0.02, key[2] * 0.03, key[3] * 2500 + 2500
     dlat = r / 111320
     dlon = r / (111320 * max(0.2, math.cos(math.radians(clat))))
     g = Graph()

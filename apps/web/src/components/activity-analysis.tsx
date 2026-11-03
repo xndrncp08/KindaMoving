@@ -314,7 +314,13 @@ export function ActivityAnalysis({
           {streams.isPending ? (
             <Skeleton />
           ) : points.length > 0 ? (
-            <Charts points={points} imperial={imperial} onCursor={setCursor} />
+            <WhenVisible label="run charts" height={540}>
+              <Charts
+                points={points}
+                imperial={imperial}
+                onCursor={setCursor}
+              />
+            </WhenVisible>
           ) : (
             <p className="muted">No time-series data in this file.</p>
           )}

@@ -21,7 +21,11 @@ def configuration_errors(env=None):
             raise ValueError()
         if not (url.username or "").split(".")[0] == "km_network_reader":
             raise ValueError()
-        if parse_qs(url.query).get("sslmode") != ["verify-full"]:
+        params = parse_qs(url.query, keep_blank_values=True)
+        # libpq query parameters can override the URI identity inspected above.
+        if set(params) & {'host', 'hostaddr', 'user', 'password', 'dbname', 'service', 'options', 'port'}:
+            raise ValueError()
+        if params.get("sslmode") != ["verify-full"]:
             raise ValueError()
         if mode == 'staging':
             ref = env.get('KM_STAGING_SUPABASE_REF', '')

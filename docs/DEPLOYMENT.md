@@ -69,3 +69,7 @@ steps, Calgary archived-extract dry-run and blocked workflows are in the
 and failed Render readiness prevent beta invitations even when the web preview
 is READY. Use an isolated staging project for destructive acceptance. Never
 substitute another Supabase project for the intended inaccessible one.
+
+## Phase 6 isolated staging
+
+Use `KM_DEPLOYMENT=staging` with a new approved `KM_STAGING_SUPABASE_REF` on both runtimes. The helper rejects shared refs and CLI overrides; web URL and reader DSN must agree. Existing shared previews are not a deployment target for new acceptance. Separate templates and the exact migration/Auth/Storage/secret/job procedure are in [Phase 6](release/PHASE6_BETA_READINESS.md#isolation-runbook--operator-approval-required). `scripts/validate-staging.py` proves consistency only; no provisioning or credential binding is inferred.

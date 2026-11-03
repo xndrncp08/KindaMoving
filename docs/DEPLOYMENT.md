@@ -53,3 +53,19 @@ Record the prior Vercel deployment ID and Render deploy ID/SHA before release. R
 ## Monitoring and alerts
 
 Use external monitoring for public liveness and authenticated readiness (store monitoring bearer secrets privately). Alert on repeated 503/5xx, function timeouts, Render OOM/restarts and elevated latency. Inspect job status/event counts, oldest due/expired lease, retry_wait/failed growth, stale municipal conditions (>30 min), expired annotated-video backlog, Supabase Auth 429/delivery failures, DB connection pressure and COROS quota deferrals. Check providers' spend dashboards and set budget alerts before launch. Never log Authorization, DSNs, sealed-token material, video bytes, precise tracks or exported accounts. Request/deploy IDs and aggregate status counts are sufficient for initial operations.
+
+## Phase 5 staging acceptance
+
+The existing `kindamoving-staging` project remains an SSO-protected **preview**,
+not a production release. `scripts/deploy-staging.sh` exports committed HEAD,
+uses the existing daily-only staging config and attaches `kmGitSha` metadata.
+Verify the linked project/team and CI first, then inspect READY, metadata and
+project-wide SSO after deploying; metadata does not replace actual build checks.
+No plan upgrade, data import or production promotion is implicit.
+
+Current provider observations, authenticated read probes, exact reader operator
+steps, Calgary archived-extract dry-run and blocked workflows are in the
+[Phase 5 report](release/PHASE5_MOBILE_READINESS.md). Shared privileged credentials
+and failed Render readiness prevent beta invitations even when the web preview
+is READY. Use an isolated staging project for destructive acceptance. Never
+substitute another Supabase project for the intended inaccessible one.

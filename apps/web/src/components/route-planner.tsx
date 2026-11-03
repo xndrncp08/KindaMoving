@@ -119,7 +119,17 @@ export function RoutePlanner({ userId }: { userId: string }) {
   const landscapePhone = useMedia(
     '(max-width: 720px) and (orientation: landscape)',
   );
-  const sheet = useSheet('half');
+  const requestedSnap = params.get('sheet');
+  const sheet = useSheet(
+    requestedSnap === 'peek' || requestedSnap === 'full'
+      ? requestedSnap
+      : 'half',
+  );
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('sheet', sheet.snap);
+    window.history.replaceState(window.history.state, '', url);
+  }, [sheet.snap]);
   const [overlay, setOverlay] = useState(true);
   const [name, setName] = useState('');
   const [saved, setSaved] = useState(false);

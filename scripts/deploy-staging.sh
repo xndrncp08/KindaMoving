@@ -4,8 +4,9 @@
 set -euo pipefail
 root=$(git rev-parse --show-toplevel)
 out=$(mktemp -d)
+trap 'rm -rf "$out"' EXIT
 git -C "$root" archive HEAD | tar -x -C "$out"
 cp -R "$root/.vercel" "$out/.vercel"
 cp "$out/apps/web/vercel.staging.json" "$out/apps/web/vercel.json"
 cd "$out"
-vercel deploy --yes "$@"
+vercel deploy --yes --meta "kmGitSha=$(git -C "$root" rev-parse HEAD)" "$@"

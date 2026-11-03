@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { VIEWPORTS, audit } from './mobile-audit';
 
@@ -8,7 +8,10 @@ import { VIEWPORTS, audit } from './mobile-audit';
  * test account (never a real user). Screenshots land in test-results/mobile.
  */
 const SHOTS = process.env.KM_SHOTS_DIR ?? 'test-results/mobile';
-const signedIn = !!process.env.KM_E2E_EMAIL && !!process.env.KM_E2E_PASSWORD;
+const privateState = process.env.KM_E2E_STATE;
+const signedIn =
+  !!privateState ||
+  (!!process.env.KM_E2E_EMAIL && !!process.env.KM_E2E_PASSWORD);
 const only = process.env.KM_PAGES?.split(',');
 
 const publicPages = { landing: '/', login: '/login', privacy: '/privacy' };
@@ -75,15 +78,18 @@ test.describe('mobile audit', () => {
 
   test.describe('signed in', () => {
     test.skip(!signedIn, 'set KM_E2E_EMAIL and KM_E2E_PASSWORD (test account)');
-    let state: string;
+    let state: Awaited<ReturnType<BrowserContext['storageState']>>;
     let ids: Record<string, string> = {};
     test.beforeAll(async ({ browser }) => {
-      const page = await browser.newPage();
-      await page.goto('/login');
-      await page.getByLabel('Email').fill(process.env.KM_E2E_EMAIL!);
-      await page.getByLabel('Password').fill(process.env.KM_E2E_PASSWORD!);
-      await page.getByRole('button', { name: /log in/i }).click();
-      await page.waitForURL(/\/app/);
+      const page = await browser.newPage({ storageState: privateState });
+      if (privateState) await page.goto('/app');
+      else {
+        await page.goto('/login');
+        await page.getByLabel('Email').fill(process.env.KM_E2E_EMAIL!);
+        await page.getByLabel('Password').fill(process.env.KM_E2E_PASSWORD!);
+        await page.getByRole('button', { name: /log in/i }).click();
+        await page.waitForURL(/\/app/);
+      }
       const runs: { id: string; distance_m: number }[] = await page.evaluate(
         async () => (await fetch('/api/activities')).json(),
       );
@@ -92,8 +98,8 @@ test.describe('mobile audit', () => {
         (r) => Math.abs(r.distance_m - runs[0].distance_m) < 100,
       );
       ids = { run: runs[0]?.id, a: same[0]?.id, b: same[1]?.id ?? runs[1]?.id };
-      state = test.info().outputPath('state.json');
-      await page.context().storageState({ path: state });
+      // Auth cookies stay in memory, outside failure artifacts.
+      state = await page.context().storageState();
       await page.close();
     });
     for (const [vp, width, height] of VIEWPORTS)

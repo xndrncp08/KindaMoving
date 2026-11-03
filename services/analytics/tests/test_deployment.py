@@ -104,3 +104,22 @@ def test_import_cli_dry_run_does_not_use_writer_credentials(tmp_path):
     result=subprocess.run([sys.executable,str(Path(module.__file__)),'--region','calgary','--bbox=-114.13,51.035,-114.03,51.070','--from-file',str(extract)],env={**os.environ,'NETWORK_ADMIN_DATABASE_URL':'invalid-must-never-be-used'},capture_output=True,text=True)
     assert result.returncode==0,result.stderr
     assert json.loads(result.stdout)['apply'] is False
+
+
+def test_dry_run_reports_disconnected_and_invalid_topology():
+    from km_analytics.routing.graph import Graph, Node, Edge
+    graph = Graph(nodes={1: Node(51, -114), 2: Node(51.01, -114),
+                         3: Node(51, -114.01), 4: Node(51.01, -114.01)})
+    for index, (u, v) in enumerate([(1, 2), (3, 4)]):
+        graph.add_edge(Edge(id=index, u=u, v=v, way_id=index,
+                            coords=[[-114, 51], [-114, 51.01]], length=100, highway='path'))
+    report = module.topology(graph)
+    assert report['components'] == 2 and report['largest_component_nodes'] == 2
+    assert report['stored_nodes'] == 4 and report['elevation_coverage'] == 0
+    graph.edges[0].length = -1
+    with pytest.raises(ValueError):
+        module.topology(graph)
+    graph.edges[0].length = 100
+    graph.edges[0].v = 99
+    with pytest.raises(ValueError):
+        module.topology(graph)

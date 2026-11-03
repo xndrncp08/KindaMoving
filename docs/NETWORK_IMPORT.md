@@ -19,3 +19,68 @@ The existing migration creates `km_network_reader` NOLOGIN and grants SELECT onl
 Readiness verifies current_user, rejects superuser/BYPASSRLS/write privileges, checks Calgary rows and native tzdata. The SQL regression suite also asserts the role cannot write reference tables or select profiles. Credentials for the import writer and runtime reader must remain separate. RLS is not a substitute for withholding admin credentials from compute.
 
 For native database timezone acceptance, set NETWORK_DATABASE_URL privately and run `services/analytics/.venv/bin/python scripts/check-timezones.py`. It runs only constant timestamp conversions inside a read-only transaction. Failure is a launch blocker requiring connection review or a supported Supabase tzdata upgrade; it never rewrites stored timestamps.
+
+## Operator-only reader activation (Phase 5)
+
+Target **only** Supabase project `yqzbsuandpdlvgtgnwln` after confirming it in
+Project Settings and the connection host. Management API/SQL access to this
+project was denied on 2026-11-02; another accessible project is not a substitute.
+These are operator instructions, **not executed changes**.
+
+1. Open a private TLS-verified `psql` session as the project's database administrator.
+   Obtain the connection details from that project's dashboard; keep the DSN out of
+   shell history, process arguments, screenshots and issue comments.
+2. Run the following **read-only inspection** before enabling a login:
+
+```sql
+SELECT rolname, rolcanlogin, rolsuper, rolbypassrls, rolcreaterole, rolcreatedb, rolreplication
+FROM pg_roles WHERE rolname = 'km_network_reader';
+SELECT parent.rolname AS inherited_role, m.admin_option
+FROM pg_auth_members m
+JOIN pg_roles child ON child.oid = m.member
+JOIN pg_roles parent ON parent.oid = m.roleid
+WHERE child.rolname = 'km_network_reader';
+SELECT c.relname,
+       has_table_privilege('km_network_reader', c.oid, 'SELECT') AS can_read,
+       has_table_privilege('km_network_reader', c.oid, 'INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER') AS can_write
+FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+WHERE n.nspname = 'public' AND c.relkind IN ('r', 'p')
+ORDER BY c.relname;
+SELECT nspname, has_schema_privilege('km_network_reader', oid, 'CREATE') AS can_create
+FROM pg_namespace WHERE nspname IN ('public', 'extensions');
+```
+
+Expect one role with superuser/BYPASSRLS/create-role/create-db all false,
+replication false, no inherited roles or schema CREATE, SELECT on the three network tables only, and **no writes**.
+Stop and investigate unexpected privileges or a missing role; do not replay
+migrations or blanket-revoke grants on a shared database. 3. In the same private interactive `psql` session, generate/store a unique password
+in the operator's secret manager, then enter it through the hidden prompt:
+
+```text
+\password km_network_reader
+```
+
+Only after the inspection and password setup succeed, the operator may run:
+
+```sql
+ALTER ROLE km_network_reader LOGIN;
+```
+
+4. Put the reader's custom-role pooler connection into Render's
+   `NETWORK_DATABASE_URL` secret, with `sslmode=verify-full` and a verified CA.
+   Put the same >=32-character `ANALYTICS_SERVICE_TOKEN` in Vercel and Render via
+   their secret interfaces. Never put the writer/admin DSN in analytics.
+5. Run native timezone acceptance and authenticated `/readyz`. An empty network
+   correctly keeps readiness at 503; reader activation does not authorize an import.
+   Set the Render health-check path to `/readyz` after reviewing its deployment
+   configuration. Retain the existing protected staging boundary.
+
+## Dry-run diagnostics
+
+The JSON report distinguishes geometry nodes from stored edge endpoints and
+traversable nodes. It includes connected-component counts, largest component,
+dangling endpoints, invalid lengths and endpoint elevation coverage. Components
+are a coverage warning, not a route-confidence score. No connectivity repair or
+routing algorithm is added. Invalid endpoints/lengths abort before any write.
+See [the Phase 5 release report](release/PHASE5_MOBILE_READINESS.md) for the
+reviewed archived extract, exact counts, coverage and proposed changes.

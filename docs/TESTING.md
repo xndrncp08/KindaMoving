@@ -29,7 +29,9 @@ Final command results are recorded in `CLAUDE_HANDOFF.md`. The relational-only h
 
 ## CI
 
-GitHub Actions runs npm clean install, lint, typecheck, Vitest, Prettier, build, and both browser projects. A separate Ubuntu job installs PostgreSQL 16/PostGIS and runs the full migration harness. Browser failure traces upload as artifacts. No production credentials are required by CI. Passing these jobs is not a live Supabase or production acceptance test.
+GitHub Actions runs npm clean install, lint, typecheck, Vitest, Prettier, build, and both browser projects. A separate Ubuntu job installs PostgreSQL 16/PostGIS and runs the full migration harness. Credential-free browser failure traces upload as artifacts. Authenticated traces
+are disabled by default and Auth state is kept in memory. A full npm audit blocks
+high/critical advisories; documented moderate lint-tool findings remain. No production credentials are required by CI. Passing these jobs is not a live Supabase or production acceptance test.
 
 ## Dependency audit
 
@@ -131,3 +133,11 @@ commands without Lighthouse/axe scrolling side effects. It does not measure INP
 or completed tile rendering. No physical-device result is implied by these tools. Current counts,
 manual hardware worksheet and 15-workflow acceptance:
 [Phase 5](release/PHASE5_MOBILE_READINESS.md).
+
+The maintained mobile lab uses Lighthouse 13.5.0 and Puppeteer 25.16.0 (Node
+
+> =22.19). The Phase 5 historical comparison explicitly retains its original
+> 12.8.2 label; later compatibility probes are not mixed into those medians. The
+> patched toolchain removes newly identified high development advisories. The full
+> audit returns the existing 16 moderate ESLint/minimatch-chain findings and no
+> high/critical findings; the production-only audit is clean.

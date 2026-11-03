@@ -68,3 +68,8 @@ first locale visit remains hydration-dependent.
 Method, all sanitized trials, first-reveal cost, checks and hardware limitations:
 [Phase 5 report](release/PHASE5_MOBILE_READINESS.md). The previous mobile audit's
 pre-hydration Home result is historical; it is not the baseline for these numbers.
+
+Tooling security note: the recorded Phase 5 comparison used Lighthouse 12.8.2;
+current scripts pin patched Lighthouse 13.5.0 / Puppeteer 25.16.0. Compatibility
+probes were rerun without relabelling the earlier figures. For new measurements,
+use the same tool version on both application revisions.

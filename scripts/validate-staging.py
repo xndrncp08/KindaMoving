@@ -10,6 +10,8 @@ from km_analytics.deployment import configuration_errors
 
 def validate(env):
     errors = configuration_errors({**env, 'KM_DEPLOYMENT': 'staging'})
+    if env.get('KM_DEPLOYMENT') != 'staging':
+        errors.append('KM_DEPLOYMENT must be staging')
     ref = env.get('KM_STAGING_SUPABASE_REF', '')
     if not re.fullmatch('[a-z0-9]{20}', ref) or ref == 'yqzbsuandpdlvgtgnwln':
         errors.append('Select an approved, separate KindaMoving staging project')

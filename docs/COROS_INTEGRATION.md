@@ -58,3 +58,7 @@ Writing uses the documented `uploadRouteFile` (GPX) and workout tools, and alway
 ## Developer access fallback
 
 Everything above needs only the public MCP service and a user's COROS account. No partner credentials are needed. Without a COROS account, users import via GPX/FIT upload, and routes export as GPX with COROS app import instructions.
+
+## Phase 6 acceptance
+
+Current official tools/FAQ still document the fixed 50-file/24-hour FIT budget and 30/180-day access/rotating-refresh lifecycle. PACE 4 uses the supported watch→COROS app→MCP FIT flow; no direct watch communication is claimed. The [Phase 6 checklist](release/PHASE6_BETA_READINESS.md#coros-pace-4-acceptance) requires an expressly authorized account and per-item confirmation for external writes. No live account acceptance has occurred.

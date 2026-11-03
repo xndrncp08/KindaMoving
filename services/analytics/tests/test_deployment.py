@@ -179,7 +179,7 @@ def test_staging_preflight_and_route_acceptance_reject_wrong_targets():
     preflight = load('validate-staging')
     assert preflight.validate({})
     ref = 'abcdefghijklmnopqrst'
-    env = {'KM_STAGING_SUPABASE_REF': ref, 'NEXT_PUBLIC_SUPABASE_URL': f'https://{ref}.supabase.co',
+    env = {'KM_DEPLOYMENT': 'staging', 'KM_STAGING_SUPABASE_REF': ref, 'NEXT_PUBLIC_SUPABASE_URL': f'https://{ref}.supabase.co',
            'NETWORK_DATABASE_URL': f'postgresql://km_network_reader:secret@db.{ref}.supabase.co/postgres?sslmode=verify-full',
            'ANALYTICS_SERVICE_TOKEN': 'a'*32, 'CRON_SECRET': 'b'*32,
            'NEXT_PUBLIC_SITE_URL': 'https://web.test', 'ANALYTICS_URL': 'https://analytics.test'}
@@ -188,3 +188,11 @@ def test_staging_preflight_and_route_acceptance_reject_wrong_targets():
     routing = load('accept-routing')
     with pytest.raises(AssertionError): routing.check_result({'status': 'conflict', 'routes': []})
     with pytest.raises(AssertionError): routing.check_result({'status': 'ok', 'routes': [{'geometry': {'coordinates': [[0, 0], [1, 1]]}}]})
+
+
+@pytest.mark.parametrize('override',['host=db.other.test','user=postgres','dbname=other','options=-crole=postgres','service=other'])
+def test_dsn_query_cannot_override_validated_connection_identity(override):
+    env={'ANALYTICS_SERVICE_TOKEN':'a'*32,'NETWORK_DATABASE_URL':
+         'postgresql://km_network_reader:secret@db.test/postgres?sslmode=verify-full&'+override}
+    assert configuration_errors(env)
+    assert 'secret' not in str(configuration_errors(env))

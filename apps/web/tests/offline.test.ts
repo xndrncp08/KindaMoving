@@ -105,3 +105,12 @@ it('aborts old-account replay and never sends its next item after identity chang
   expect(await old).toBe(0);
   expect(fetchMock).toHaveBeenCalledTimes(1);
 });
+
+it('does not overwrite new-account counts when an old dismissal completes', async () => {
+  const { dismiss } = await import('@/lib/offline/outbox');
+  const old = dismiss('u1', 'old-rejected');
+  cancelOutbox();
+  useOffline.getState().set({ pending: 5 });
+  await old;
+  expect(useOffline.getState().pending).toBe(5);
+});

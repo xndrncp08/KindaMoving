@@ -27,7 +27,10 @@ for (let trial = 1; trial <= 5; trial++) {
     await page.goto(new URL('/chart-lab', base).href, {
       waitUntil: 'networkidle0',
     });
-    assert(await page.$('button'), 'Fixture missing');
+    assert.equal(
+      await page.$eval('h1', (e) => e.textContent),
+      'Synthetic chart performance fixture',
+    );
     await page.evaluate(() => {
       window.labTasks = [];
       new PerformanceObserver((list) =>
@@ -36,7 +39,12 @@ for (let trial = 1; trial <= 5; trial++) {
       window.labStart = performance.now();
     });
     await page.click('main button');
-    await page.waitForSelector('.streams .recharts-line-curve');
+    await page.waitForFunction(
+      () =>
+        document.querySelectorAll(
+          '.streams .recharts-line-curve, .streams .recharts-area-curve',
+        ).length >= 3,
+    );
     results.push({
       trial,
       ...(await page.evaluate(async () => {

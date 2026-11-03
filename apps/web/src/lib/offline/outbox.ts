@@ -152,6 +152,7 @@ export function flush(userId: string): Promise<number> {
   return scope.promise;
 }
 export async function dismiss(userId: string, id: string) {
+  const signal = session.signal;
   await del('outbox', id);
-  await refreshCounts(userId);
+  if (!signal.aborted) await refreshCounts(userId);
 }

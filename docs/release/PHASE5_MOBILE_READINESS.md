@@ -188,7 +188,19 @@ and Vercel Preview public config agree. Management project lookup and read-only
 SQL were denied for this exact project. No alternative project was changed.
 Scoped existing application credentials allowed Auth and data reads only.
 
-**Updated protected candidate:**
+**Current protected candidate (patched tooling):**
+[Phase 5 staging](https://kindamoving-staging-mlmenszrr-xander-rancaps-projects.vercel.app),
+`dpl_7KP4emrBxrTMCX9dxEfEE8VZFqET`, **READY / preview**, from archive
+`3c52688`. All three jobs, including the high/critical dependency gate, passed in
+[run 41578824242](https://github.com/xndrncp08/KindaMoving/actions/runs/41578824242).
+The latest candidate again returned authenticated health 200 and unauthenticated
+302 to Vercel SSO. Authenticated Chromium phone emulation again passed Home,
+Analyze keyboard tracing, planner restoration and Conditions; real versioned
+worker/style requests returned 200 and page errors were zero. Only development
+tooling and its CI guard changed after the first candidate. No production
+promotion, paid configuration or hosted reference-data change occurred.
+
+**First verified Phase 5 candidate:**
 [Phase 5 staging](https://kindamoving-staging-q8frkjayp-xander-rancaps-projects.vercel.app),
 `dpl_8nuNQV1Ho3SJLz5ctew739p3BFvv`, **READY / preview**. Deployed from the
 committed `c97215d` archive with the versioned staging config; no production

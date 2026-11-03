@@ -172,7 +172,34 @@ and Vercel Preview public config agree. Management project lookup and read-only
 SQL were denied for this exact project. No alternative project was changed.
 Scoped existing application credentials allowed Auth and data reads only.
 
-Existing preview: `dpl_DiT2QbtcMchn6zzNuF59U5hrxyS3`,
+**Updated protected candidate:**
+[Phase 5 staging](https://kindamoving-staging-q8frkjayp-xander-rancaps-projects.vercel.app),
+`dpl_8nuNQV1Ho3SJLz5ctew739p3BFvv`, **READY / preview**. Deployed from the
+committed `c97215d` archive with the versioned staging config; no production
+promotion. `--meta kmGitSha` was submitted, but the available provider/CLI inspect
+responses do not expose it, so the SHA evidence is the local archive/deploy
+command and CI rather than a claimed provider metadata echo. The build ran Node
+22 (the app engine overrides the project's configured default).
+
+After deployment, provider configuration still reports SSO on **all** deployments.
+An unauthenticated request with redirects disabled returns **302 to vercel.com**;
+following that SSO redirect produces a login page with HTTP 200, not public app
+access. Authenticated `vercel curl /api/healthz` returns **200 / `{"ok":true}`**.
+An origin-scoped OIDC browser check using only the synthetic account verified
+Home, Analyze keyboard tracing, planner `?sheet=full` and Conditions, with **zero
+page errors**. The real versioned MapLibre worker and OpenFreeMap style returned
+200, and the staged screenshot shows the synthetic route rendered over real map
+tiles. No map/mock responses were substituted in this hosted check. It is
+**Chromium emulation**, not hardware or completion of all fifteen workflows.
+The first worker probe used an exact filename match and missed its version query;
+matching the actual versioned URL corrected the probe, with no app change.
+
+Implementation `c97215d` passed all three GitHub jobs (web, analytics, database) in
+[run 41576172096](https://github.com/xndrncp08/KindaMoving/actions/runs/41576172096).
+The later evidence update changes documentation only. Main remains subject to the
+same CI checks; the merge SHA/run are reported in the delivery summary.
+
+Prior preview: `dpl_DiT2QbtcMchn6zzNuF59U5hrxyS3`,
 [protected staging](https://kindamoving-staging-23t2vhmrd-xander-rancaps-projects.vercel.app),
 project `kindamoving-staging` / `prj_WldDezKdgZIpA1ywKpXhiEzWnSaW`.
 Provider reports READY, preview target, SSO on **all** deployments. Authenticated

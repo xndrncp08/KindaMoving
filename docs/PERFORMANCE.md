@@ -73,3 +73,7 @@ Tooling security note: the recorded Phase 5 comparison used Lighthouse 12.8.2;
 current scripts pin patched Lighthouse 13.5.0 / Puppeteer 25.16.0. Compatibility
 probes were rerun without relabelling the earlier figures. For new measurements,
 use the same tool version on both application revisions.
+
+## Phase 6 first-reveal investigation
+
+A separate 600-point synthetic fixture measured median chart appearance 556 ms and longest main-thread task 122 ms over five CPU4× component trials. Assets were local/unthrottled. This is not comparable to authenticated-app INP or evidence of an optimization over the earlier 150 ms observation. No chart functionality was removed; device verification remains required. Reproduction and raw sanitized observations: [Phase 6](release/PHASE6_BETA_READINESS.md#performance-and-device-evidence).

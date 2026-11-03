@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from contextlib import asynccontextmanager
 import time
+import asyncio
 import hmac
 import os
 
@@ -31,7 +32,7 @@ MAX_UPLOAD_BYTES = 25 * 1024 * 1024
 
 @asynccontextmanager
 async def lifespan(_app):
-    if os.environ.get("KM_DEPLOYMENT") == "production":
+    if os.environ.get("KM_DEPLOYMENT", 'development') != "development":
         from .deployment import configuration_errors
         errors = configuration_errors()
         if errors:
@@ -60,19 +61,31 @@ def health() -> dict:
     return {"ok": True}
 
 
-_readiness = {"at": 0.0, "ok": False}
+_readiness = {"at": 0.0, "ok": False, "task": None}
+READINESS_TIMEOUT_S = 4  # Render's HTTP health check requires a response within five seconds.
 
 
 @app.get("/readyz")
-def readiness():
+async def readiness():
     from .deployment import configuration_errors, network_ready
     if configuration_errors():
         return JSONResponse({"ok": False}, status_code=503, headers={"Cache-Control": "no-store"})
     if time.monotonic()-_readiness["at"] > 15:
+        if _readiness['task'] is None:
+            async def probe():
+                try:
+                    return await asyncio.to_thread(network_ready)
+                except Exception:
+                    return False  # Late failures must not log connection details as unhandled task errors.
+            _readiness['task'] = asyncio.create_task(probe())
+        task = _readiness['task']
         try:
-            _readiness["ok"] = network_ready()
+            # Keep one probe in flight even if DNS/connect/query outlives this HTTP deadline.
+            _readiness["ok"] = bool(await asyncio.wait_for(asyncio.shield(task), READINESS_TIMEOUT_S))
         except Exception:
             _readiness["ok"] = False
+        if task.done():
+            _readiness['task'] = None
         _readiness["at"] = time.monotonic()
     return JSONResponse({"ok": _readiness["ok"]}, status_code=200 if _readiness["ok"] else 503, headers={"Cache-Control": "no-store"})
 

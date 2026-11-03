@@ -19,7 +19,12 @@ export async function analytics<T>(
       ...init,
       redirect: 'error',
       headers: { ...init.headers, Authorization: 'Bearer ' + token },
-      signal: AbortSignal.timeout(init.timeoutMs ?? 60000),
+      signal: init.signal
+        ? AbortSignal.any([
+            init.signal,
+            AbortSignal.timeout(init.timeoutMs ?? 60000),
+          ])
+        : AbortSignal.timeout(init.timeoutMs ?? 60000),
       cache: 'no-store',
     });
   } catch {
@@ -28,12 +33,27 @@ export async function analytics<T>(
       'analytics_down',
     );
   }
-  const body = await response.json().catch(() => ({}));
+  let body: Record<string, unknown> = {};
+  try {
+    const value: unknown = await response.json();
+    if (!value || typeof value !== 'object' || Array.isArray(value))
+      throw new Error('Expected an object');
+    body = value as Record<string, unknown>;
+  } catch {
+    // A proxy's HTTP 200 HTML (or interrupted JSON body) is not compute success.
+    if (response.ok)
+      throw new TransientError(
+        'Analytics response was invalid.',
+        'analytics_invalid_response',
+      );
+  }
   if (response.ok) return body as T;
   if (response.status === 422)
     throw new PermanentError(
-      body.error || 'File could not be processed.',
-      body.code || 'invalid_input',
+      typeof body.error === 'string'
+        ? body.error
+        : 'File could not be processed.',
+      typeof body.code === 'string' ? body.code : 'invalid_input',
     );
   if (response.status === 429 || response.status >= 500)
     throw new TransientError(

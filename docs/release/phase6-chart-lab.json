@@ -1,0 +1,34 @@
+{
+  "scope": "synthetic 600-point component mount, CPU4x; not authenticated app or INP",
+  "results": [
+    {
+      "trial": 1,
+      "elapsedMs": 586.1999999880791,
+      "longTasksMs": [53, 127, 74]
+    },
+    {
+      "trial": 2,
+      "elapsedMs": 552.9000000357628,
+      "longTasksMs": [119, 77]
+    },
+    {
+      "trial": 3,
+      "elapsedMs": 566.6999999880791,
+      "longTasksMs": [118, 77]
+    },
+    {
+      "trial": 4,
+      "elapsedMs": 555.0999999642372,
+      "longTasksMs": [124, 74]
+    },
+    {
+      "trial": 5,
+      "elapsedMs": 556,
+      "longTasksMs": [122, 74]
+    }
+  ],
+  "medianElapsedMs": 556,
+  "medianLongestTaskMs": 122,
+  "applicationRevision": "92c4e31",
+  "toolchain": "Puppeteer 25.16.0; Playwright Chromium; 393x852 DPR1; applied CPU4x; local assets without network throttling"
+}

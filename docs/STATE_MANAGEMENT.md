@@ -37,3 +37,7 @@ Zustand selectors subscribe to individual fields/actions. Persistent state uses 
 **Optimism**: writes stay confirmed rather than optimistic where IDs, constraints or external effects matter (imports, plans, COROS pushes). Link-only training reconciliation is applied automatically because it is non-destructive and idempotent.
 
 **Account switching**: identity change or logout clears Query and Zustand, purges every IndexedDB store and tells the service worker to drop its caches. On mount, records belonging to another user are purged as well.
+
+## Phase 6 identity transitions
+
+Outbox replay is single-flight per user and carries an abort signal. Logout, account transition and component cleanup cancel previous work; late results cannot update the next account’s banner or send a second old report. Cancelled reports are not marked rejected. IndexedDB purge remains the existing identity boundary, and server records stay in Query. No new state library was added.

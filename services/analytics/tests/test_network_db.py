@@ -86,3 +86,35 @@ def test_readiness_rejects_an_administrative_connection(loaded,monkeypatch):
     from km_analytics.deployment import network_ready
     monkeypatch.setenv('NETWORK_DATABASE_URL',DSN)
     assert network_ready() is False
+
+
+def test_cache_never_reuses_a_graph_for_different_connection_credentials(loaded, monkeypatch):
+    import psycopg
+    # loaded() warmed the coordinate tile. A different connection must be checked.
+    def denied(*args, **kwargs):
+        raise psycopg.OperationalError('synthetic unavailable connection')
+    monkeypatch.setattr(psycopg, 'connect', denied)
+    with pytest.raises(psycopg.OperationalError):
+        network.load(*START, 2500, DSN + ' application_name=isolated-cache-test')
+
+
+def test_readiness_accepts_reader_and_rejects_truncate_even_with_rls(loaded, monkeypatch):
+    import psycopg
+    from contextlib import contextmanager
+    from km_analytics.deployment import network_ready
+    original = psycopg.connect
+    with original(DSN) as conn:
+        conn.execute("update public.network_edges set region='calgary' where region='calgary-test'")
+        @contextmanager
+        def reader_connection(*args, **kwargs):
+            yield conn
+        monkeypatch.setattr(psycopg, 'connect', reader_connection)
+        monkeypatch.setenv('NETWORK_DATABASE_URL', DSN)
+        conn.execute('set role km_network_reader')
+        assert network_ready() is True
+        conn.execute('reset role')
+        conn.execute('grant truncate on public.network_edges to km_network_reader')
+        conn.execute('set role km_network_reader')
+        assert network_ready() is False
+        conn.execute('reset role')
+        conn.rollback()  # Only this disposable transaction was changed.

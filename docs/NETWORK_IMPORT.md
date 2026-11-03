@@ -84,3 +84,7 @@ are a coverage warning, not a route-confidence score. No connectivity repair or
 routing algorithm is added. Invalid endpoints/lengths abort before any write.
 See [the Phase 5 release report](release/PHASE5_MOBILE_READINESS.md) for the
 reviewed archived extract, exact counts, coverage and proposed changes.
+
+## Phase 6 isolated target
+
+Phase 6 does not authorize altering the shared reader or importing shared data. Apply the reader instructions above only to the newly approved isolated project after replacing every target reference. `scripts/accept-routing.py` is a compute-only HTTPS pilot probe after an approved import; it does not save routes or verify GPX handoff. New readiness checks also reject TRUNCATE, schema CREATE, inherited roles and non-network table reads. See [Phase 6](release/PHASE6_BETA_READINESS.md).

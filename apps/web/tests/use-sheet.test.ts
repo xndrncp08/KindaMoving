@@ -25,7 +25,34 @@ import { renderHook, act } from '@testing-library/react';
 import { useSheet } from '@/lib/use-sheet';
 it('preserves a restored stop and discards a browser-cancelled drag', () => {
   const { result } = renderHook(() => useSheet('full'));
+  const parent = document.createElement('div');
+  const panel = document.createElement('section');
+  parent.append(panel);
+  result.current.ref.current = panel;
+  const target = document.createElement('button');
+  target.setPointerCapture = () => {};
+  act(() => {
+    result.current.handleProps.onPointerDown({
+      button: 0,
+      currentTarget: target,
+      pointerId: 1,
+      clientY: 200,
+      timeStamp: 0,
+    } as unknown as React.PointerEvent);
+    result.current.handleProps.onPointerMove({
+      clientY: 300,
+      timeStamp: 10,
+    } as React.PointerEvent);
+  });
+  expect(panel.style.getPropertyValue('--sheet-drag')).not.toBe('');
   expect(result.current.snap).toBe('full');
   act(() => result.current.handleProps.onPointerCancel());
+  expect(panel.style.getPropertyValue('--sheet-drag')).toBe('');
+  act(() =>
+    result.current.handleProps.onPointerUp({
+      clientY: 400,
+      timeStamp: 20,
+    } as React.PointerEvent),
+  );
   expect(result.current.snap).toBe('full');
 });

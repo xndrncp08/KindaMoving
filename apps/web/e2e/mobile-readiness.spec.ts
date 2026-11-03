@@ -44,6 +44,7 @@ test('secondary map initializes on visibility and chart tracing works by keyboar
 }) => {
   const id = await run(page);
   await page.goto('/app/activities/' + id);
+  await expect(page.locator('.run-map .maplibregl-canvas')).toHaveCount(0);
   const slider = page.getByRole('slider', { name: 'Trace run sample' });
   await expect(slider).toBeVisible();
   await slider.focus();
@@ -51,6 +52,11 @@ test('secondary map initializes on visibility and chart tracing works by keyboar
   await expect(slider).toHaveValue('1');
   await expect(page.locator('.cursor-readout')).not.toContainText(
     'use the sample slider',
+  );
+  // The synthetic fixture's native range control has no dates, map tiles or animations.
+  await expect(page.locator('.streams > label')).toHaveScreenshot(
+    'analyze-trace-control.png',
+    { animations: 'disabled', caret: 'initial' },
   );
   const map = page.locator('.run-map');
   await map.scrollIntoViewIfNeeded();
@@ -146,6 +152,8 @@ test('offline report survives a lost response and synchronizes once reconnected 
   await expect(
     page.getByRole('status').filter({ hasText: 'waiting to send' }),
   ).toBeVisible();
+  // Reload discards client memory; the pending body must survive in IndexedDB.
+  await page.reload();
   await page.evaluate(() => window.dispatchEvent(new Event('online')));
   await expect.poll(() => bodies.length).toBe(2);
   expect(bodies[0].client_id).toBe(bodies[1].client_id);

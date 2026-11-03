@@ -12,6 +12,7 @@ import {
 } from 'recharts';
 import type { ChartPoint } from '@/lib/streams';
 import { useId, useState } from 'react';
+import { Input } from '@km/ui';
 import { WhenVisible } from './when-visible';
 import { duration } from '@/lib/metrics';
 const axis = { fontSize: 11, fill: 'var(--muted)' };
@@ -65,7 +66,7 @@ export default function ActivityCharts({
     <div className="streams">
       <label htmlFor={id}>
         Trace run sample
-        <input
+        <Input
           id={id}
           type="range"
           min={0}

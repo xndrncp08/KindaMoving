@@ -100,6 +100,39 @@ def elevations(nodes: dict[int, tuple[float, float]]) -> dict[int, float]:
     return out
 
 
+def topology(g: G.Graph):
+    """Disclose incomplete pilot coverage; components are not route-confidence scores."""
+    used = {edge.u for edge in g.edges} | {edge.v for edge in g.edges}
+    dangling = sum(edge.u not in g.nodes or edge.v not in g.nodes for edge in g.edges)
+    invalid = sum(not math.isfinite(edge.length) or edge.length <= 0 for edge in g.edges)
+    if dangling or invalid:
+        raise ValueError("Invalid graph references or edge lengths; no import is safe")
+    remaining = set(g.adj)
+    sizes = []
+    while remaining:
+        pending = [remaining.pop()]
+        size = 0
+        while pending:
+            node = pending.pop()
+            size += 1
+            for index in g.adj.get(node, []):
+                other = g.edges[index].other(node)
+                if other in remaining:
+                    remaining.remove(other)
+                    pending.append(other)
+        sizes.append(size)
+    return {
+        "stored_nodes": len(used),
+        "traversable_edges": sum(edge.traversable for edge in g.edges),
+        "traversable_nodes": len(g.adj),
+        "components": len(sizes),
+        "largest_component_nodes": max(sizes, default=0),
+        "dangling_edges": dangling,
+        "invalid_lengths": invalid,
+        "elevation_coverage": sum(g.nodes[node].ele is not None for node in used) / len(used) if used else 0,
+    }
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--region", required=True)
@@ -129,7 +162,7 @@ def main() -> None:
         ele = elevations({n: (g.nodes[n].lat, g.nodes[n].lon) for n in used})
         g = G.build(elements, ele)
         ele_source = "Copernicus DEM GLO-90 via Open-Meteo (CC BY 4.0)"
-    report={"region":a.region,"bbox":bbox,"nodes":len(g.nodes),"edges":len(g.edges),"apply":a.apply}
+    report={"region":a.region,"bbox":bbox,"nodes":len(g.nodes),"edges":len(g.edges),"apply":a.apply,"topology":topology(g)}
     print(json.dumps(report))
     if not a.apply:
         return

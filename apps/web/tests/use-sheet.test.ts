@@ -20,3 +20,12 @@ describe('bottom sheet snapping', () => {
     expect(settle('peek', 72, ws, -2)).toBe('peek');
   });
 });
+
+import { renderHook, act } from '@testing-library/react';
+import { useSheet } from '@/lib/use-sheet';
+it('preserves a restored stop and discards a browser-cancelled drag', () => {
+  const { result } = renderHook(() => useSheet('full'));
+  expect(result.current.snap).toBe('full');
+  act(() => result.current.handleProps.onPointerCancel());
+  expect(result.current.snap).toBe('full');
+});

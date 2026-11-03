@@ -4,12 +4,20 @@ import { test, expect, devices, type Page } from '@playwright/test';
  * Touch interactions on a phone profile against a dedicated test account
  * (KM_E2E_EMAIL / KM_E2E_PASSWORD). Emulated Chromium, not a physical device.
  */
-const signedIn = !!process.env.KM_E2E_EMAIL && !!process.env.KM_E2E_PASSWORD;
+const privateState = process.env.KM_E2E_STATE;
+const signedIn =
+  !!privateState ||
+  (!!process.env.KM_E2E_EMAIL && !!process.env.KM_E2E_PASSWORD);
 test.use({ ...devices['Pixel 7'], defaultBrowserType: 'chromium' });
+test.use({ storageState: privateState });
 test.skip(!signedIn, 'set KM_E2E_EMAIL and KM_E2E_PASSWORD (test account)');
 test.beforeEach(({}, info) => test.skip(info.project.name !== 'desktop'));
 
 async function login(page: Page, next = '/app') {
+  if (privateState) {
+    await page.goto(next);
+    return;
+  }
   await page.goto('/login');
   await page.getByLabel('Email').fill(process.env.KM_E2E_EMAIL!);
   await page.getByLabel('Password').fill(process.env.KM_E2E_PASSWORD!);

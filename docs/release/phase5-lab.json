@@ -1,0 +1,442 @@
+{
+  "date": "2026-11-02",
+  "kind": "local cold-client lab; not field data",
+  "machine": "Apple M4/macOS, Node 22.23.4",
+  "lighthouse": "12.8.2",
+  "viewport": {
+    "width": 393,
+    "height": 852,
+    "dpr": 1
+  },
+  "results": {
+    "before": {
+      "home-first": {
+        "lcpMs": 2663.915,
+        "tbtMs": 36.90300000000025,
+        "cls": 0.04748621120916485,
+        "performance": 0.96,
+        "accessibility": 1,
+        "fcpMs": 767.716,
+        "ttfbMs": 134.991,
+        "trials": [
+          {
+            "trial": 1,
+            "lcpMs": 2761.559,
+            "tbtMs": 50.58999993896441,
+            "cls": 0.04748621120916485,
+            "performance": 0.96,
+            "accessibility": 1
+          },
+          {
+            "trial": 2,
+            "lcpMs": 2663.915,
+            "tbtMs": 36.90300000000025,
+            "cls": 0.04748621120916485,
+            "performance": 0.96,
+            "accessibility": 1
+          },
+          {
+            "trial": 3,
+            "lcpMs": 2646.608,
+            "tbtMs": 28.83699999999976,
+            "cls": 0.04748621120916485,
+            "performance": 0.96,
+            "accessibility": 1
+          }
+        ]
+      },
+      "home-remembered": {
+        "lcpMs": 802.558,
+        "tbtMs": 28.33999999999969,
+        "cls": 0.053917976603899194,
+        "performance": 1,
+        "accessibility": 1,
+        "fcpMs": 802.558,
+        "ttfbMs": 200.99699999999999,
+        "trials": [
+          {
+            "trial": 1,
+            "lcpMs": 931.391,
+            "tbtMs": 28.59800000000041,
+            "cls": 0.053917976603899194,
+            "performance": 1,
+            "accessibility": 1
+          },
+          {
+            "trial": 2,
+            "lcpMs": 802.558,
+            "tbtMs": 28.33999999999969,
+            "cls": 0.053917976603899194,
+            "performance": 1,
+            "accessibility": 1
+          },
+          {
+            "trial": 3,
+            "lcpMs": 763.433,
+            "tbtMs": 27.136000000000195,
+            "cls": 0.053917976603899194,
+            "performance": 1,
+            "accessibility": 1
+          }
+        ]
+      },
+      "analyze": {
+        "lcpMs": 769.701,
+        "tbtMs": 621.5639999999999,
+        "cls": 0.0004543905926835347,
+        "performance": 0.84,
+        "accessibility": 1,
+        "fcpMs": 769.701,
+        "ttfbMs": 132.698,
+        "trials": [
+          {
+            "trial": 1,
+            "lcpMs": 781.152,
+            "tbtMs": 853.524999938965,
+            "cls": 0.0004543905926835347,
+            "performance": 0.8,
+            "accessibility": 1
+          },
+          {
+            "trial": 2,
+            "lcpMs": 769.701,
+            "tbtMs": 621.5639999999999,
+            "cls": 0.0004543905926835347,
+            "performance": 0.84,
+            "accessibility": 1
+          },
+          {
+            "trial": 3,
+            "lcpMs": 768.382,
+            "tbtMs": 585.4000000000005,
+            "cls": 0.0004543905926835347,
+            "performance": 0.85,
+            "accessibility": 1
+          }
+        ],
+        "mainThreadMiddleTrial": [
+          {
+            "group": "scriptEvaluation",
+            "groupLabel": "Script Evaluation",
+            "duration": 1740.9229999997935
+          },
+          {
+            "group": "other",
+            "groupLabel": "Other",
+            "duration": 412.7850000000239
+          },
+          {
+            "group": "styleLayout",
+            "groupLabel": "Style & Layout",
+            "duration": 328.77299999999985
+          },
+          {
+            "group": "paintCompositeRender",
+            "groupLabel": "Rendering",
+            "duration": 152.67000000000104
+          },
+          {
+            "group": "scriptParseCompile",
+            "groupLabel": "Script Parsing & Compilation",
+            "duration": 149.25200000000004
+          },
+          {
+            "group": "garbageCollection",
+            "groupLabel": "Garbage Collection",
+            "duration": 24.560999999999993
+          },
+          {
+            "group": "parseHTML",
+            "groupLabel": "Parse HTML & CSS",
+            "duration": 8.766000000000002
+          }
+        ]
+      },
+      "commit": "369ff97ff7904cdd1ba2c2cc319c971901b1e343",
+      "protocol": [
+        {
+          "method": "Network.emulateNetworkConditions",
+          "params": {
+            "offline": false,
+            "latency": 150,
+            "downloadThroughput": 209715,
+            "uploadThroughput": 86400
+          }
+        },
+        {
+          "method": "Emulation.setCPUThrottlingRate",
+          "params": {
+            "rate": 4
+          }
+        },
+        {
+          "method": "Network.emulateNetworkConditions",
+          "params": {
+            "latency": 0,
+            "downloadThroughput": 0,
+            "uploadThroughput": 0,
+            "offline": false
+          }
+        },
+        {
+          "method": "Emulation.setCPUThrottlingRate",
+          "params": {
+            "rate": 1
+          }
+        }
+      ],
+      "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "throttling": {
+        "rttMs": 150,
+        "throughputKbps": 1638.4,
+        "requestLatencyMs": 150,
+        "downloadThroughputKbps": 1638.4,
+        "uploadThroughputKbps": 675,
+        "cpuSlowdownMultiplier": 4
+      }
+    },
+    "after": {
+      "home-first": {
+        "lcpMs": 2678.257,
+        "tbtMs": 40.5090000000007,
+        "cls": 0.04748621120916485,
+        "performance": 0.96,
+        "accessibility": 1,
+        "fcpMs": 765.8,
+        "ttfbMs": 129.139,
+        "trials": [
+          {
+            "trial": 1,
+            "lcpMs": 2731.466,
+            "tbtMs": 59.746999999999844,
+            "cls": 0.04748621120916485,
+            "performance": 0.96,
+            "accessibility": 1
+          },
+          {
+            "trial": 2,
+            "lcpMs": 2678.257,
+            "tbtMs": 40.5090000000007,
+            "cls": 0.04748621120916485,
+            "performance": 0.96,
+            "accessibility": 1
+          },
+          {
+            "trial": 3,
+            "lcpMs": 2664.97,
+            "tbtMs": 33.552000000000135,
+            "cls": 0.04748621120916485,
+            "performance": 0.96,
+            "accessibility": 1
+          }
+        ]
+      },
+      "home-remembered": {
+        "lcpMs": 785.091,
+        "tbtMs": 33.00999999999976,
+        "cls": 0.053917976603899194,
+        "performance": 1,
+        "accessibility": 1,
+        "fcpMs": 785.091,
+        "ttfbMs": 147.70899999999997,
+        "trials": [
+          {
+            "trial": 1,
+            "lcpMs": 793.368,
+            "tbtMs": 33.00999999999976,
+            "cls": 0.053917976603899194,
+            "performance": 1,
+            "accessibility": 1
+          },
+          {
+            "trial": 2,
+            "lcpMs": 780.4,
+            "tbtMs": 31.445999999999685,
+            "cls": 0.053917976603899194,
+            "performance": 1,
+            "accessibility": 1
+          },
+          {
+            "trial": 3,
+            "lcpMs": 785.091,
+            "tbtMs": 33.05100000000016,
+            "cls": 0.053917976603899194,
+            "performance": 1,
+            "accessibility": 1
+          }
+        ]
+      },
+      "analyze": {
+        "lcpMs": 777.589,
+        "tbtMs": 36.69100000000003,
+        "cls": 0.0004543905926835347,
+        "performance": 1,
+        "accessibility": 1,
+        "fcpMs": 777.589,
+        "ttfbMs": 123.82,
+        "trials": [
+          {
+            "trial": 1,
+            "lcpMs": 777.589,
+            "tbtMs": 36.69100000000003,
+            "cls": 0.0004543905926835347,
+            "performance": 1,
+            "accessibility": 1
+          },
+          {
+            "trial": 2,
+            "lcpMs": 838.534,
+            "tbtMs": 37.358000000000175,
+            "cls": 0.0004543905926835347,
+            "performance": 1,
+            "accessibility": 1
+          },
+          {
+            "trial": 3,
+            "lcpMs": 767.953,
+            "tbtMs": 34.10499999999979,
+            "cls": 0.0004543905926835347,
+            "performance": 1,
+            "accessibility": 1
+          }
+        ],
+        "mainThreadMiddleTrial": [
+          {
+            "group": "scriptEvaluation",
+            "groupLabel": "Script Evaluation",
+            "duration": 821.380999999874
+          },
+          {
+            "group": "other",
+            "groupLabel": "Other",
+            "duration": 307.6160000000243
+          },
+          {
+            "group": "paintCompositeRender",
+            "groupLabel": "Rendering",
+            "duration": 111.71500000000066
+          },
+          {
+            "group": "styleLayout",
+            "groupLabel": "Style & Layout",
+            "duration": 95.15400000000008
+          },
+          {
+            "group": "scriptParseCompile",
+            "groupLabel": "Script Parsing & Compilation",
+            "duration": 65.38899999999998
+          },
+          {
+            "group": "garbageCollection",
+            "groupLabel": "Garbage Collection",
+            "duration": 23.551000000000013
+          },
+          {
+            "group": "parseHTML",
+            "groupLabel": "Parse HTML & CSS",
+            "duration": 5.444999999999999
+          }
+        ]
+      },
+      "commit": "c80eea765a51ba9900bad524e540325d13b7fceb",
+      "protocol": [
+        {
+          "method": "Network.emulateNetworkConditions",
+          "params": {
+            "offline": false,
+            "latency": 150,
+            "downloadThroughput": 209715,
+            "uploadThroughput": 86400
+          }
+        },
+        {
+          "method": "Emulation.setCPUThrottlingRate",
+          "params": {
+            "rate": 4
+          }
+        },
+        {
+          "method": "Network.emulateNetworkConditions",
+          "params": {
+            "latency": 0,
+            "downloadThroughput": 0,
+            "uploadThroughput": 0,
+            "offline": false
+          }
+        },
+        {
+          "method": "Emulation.setCPUThrottlingRate",
+          "params": {
+            "rate": 1
+          }
+        }
+      ],
+      "browser": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.0.0 Safari/537.36",
+      "throttling": {
+        "rttMs": 150,
+        "throughputKbps": 1638.4,
+        "requestLatencyMs": 150,
+        "downloadThroughputKbps": 1638.4,
+        "uploadThroughputKbps": 675,
+        "cpuSlowdownMultiplier": 4
+      }
+    }
+  },
+  "postNavigationReveal": {
+    "kind": "Single emulated post-navigation sample, not INP or tile readiness",
+    "viewport": {
+      "width": 393,
+      "height": 852,
+      "dpr": 1
+    },
+    "commands": [
+      [
+        "Emulation.setCPUThrottlingRate",
+        {
+          "rate": 4
+        }
+      ],
+      [
+        "Network.emulateNetworkConditions",
+        {
+          "offline": false,
+          "latency": 150,
+          "downloadThroughput": 209715.2,
+          "uploadThroughput": 86400
+        }
+      ]
+    ],
+    "observations": {
+      "mapCanvas": {
+        "initiallyMounted": false,
+        "elapsedMs": 487.39999997615814,
+        "longTasks": [
+          {
+            "duration": 90
+          },
+          {
+            "duration": 51
+          },
+          {
+            "duration": 65
+          }
+        ]
+      },
+      "chart": {
+        "initiallyMounted": false,
+        "elapsedMs": 1369.5,
+        "longTasks": [
+          {
+            "duration": 150
+          },
+          {
+            "duration": 79
+          }
+        ]
+      }
+    },
+    "hydrationErrors": [],
+    "measuredAppCommit": "c80eea7",
+    "method": "Separate Puppeteer navigation without Lighthouse or axe scrolling; resources may already be fetched at mount"
+  }
+}

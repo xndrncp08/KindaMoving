@@ -37,3 +37,11 @@ Remaining blockers are external configuration, native database acceptance, real 
 ## Verified release implementation
 
 All three GitHub Actions jobs (web, analytics including the non-editable deployment wheel, database/PostGIS) passed for implementation commit `979f54c` in [run 41291149710](https://github.com/xndrncp08/KindaMoving/actions/runs/41291149710). The subsequent release-evidence commit changes this document only. This CI result does not claim Vercel/Render deployment or live Supabase acceptance.
+
+## Later staging/mobile evidence
+
+This document's deployment observations are dated Phase 3 history. The
+[Phase 5 report](release/PHASE5_MOBILE_READINESS.md) records the current protected
+preview, real hosted read checks, failed Render configuration, Calgary dry-run,
+CI evidence and exact remaining operator/device gates. It does not claim a
+production promotion or complete physical-device/private-beta acceptance.

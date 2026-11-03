@@ -17,6 +17,7 @@ import { streamsQuery, api, keys } from '@/lib/queries';
 import { distance, duration } from '@/lib/metrics';
 import { chartSeries, type ChartPoint } from '@/lib/streams';
 import type { MapPoint } from './planner-map';
+import { WhenVisible } from './when-visible';
 import { WhyDifferent } from './why-different';
 const Charts = dynamic(() => import('./activity-charts'), {
   ssr: false,
@@ -313,14 +314,20 @@ export function ActivityAnalysis({
           {streams.isPending ? (
             <Skeleton />
           ) : points.length > 0 ? (
-            <Charts points={points} imperial={imperial} onCursor={setCursor} />
+            <WhenVisible label="run charts" height={540}>
+              <Charts
+                points={points}
+                imperial={imperial}
+                onCursor={setCursor}
+              />
+            </WhenVisible>
           ) : (
             <p className="muted">No time-series data in this file.</p>
           )}
           <p className="muted cursor-readout num" aria-live="off">
             {cursor
               ? `${cursor.km.toFixed(2)} km · ${paceText(cursor.pace, imperial)}${cursor.hr ? ` · ${cursor.hr} bpm` : ''}${cursor.ele != null ? ` · ${Math.round(cursor.ele)} m` : ''}`
-              : 'Hover or touch a chart to trace the run on the map.'}
+              : 'Touch a chart or use the sample slider to trace the run on the map.'}
           </p>
         </section>
         {a.track && (
@@ -328,13 +335,15 @@ export function ActivityAnalysis({
             <h2 id="map-title" className="sr-only anchor">
               Route map
             </h2>
-            <RunMap
-              lines={lines}
-              points={marker}
-              fitKey={a.id}
-              legend={false}
-              label="Map of this run. The dot follows the chart cursor."
-            />
+            <WhenVisible label="route map" className="map-container">
+              <RunMap
+                lines={lines}
+                points={marker}
+                fitKey={a.id}
+                legend={false}
+                label="Map of this run. The dot follows the chart cursor."
+              />
+            </WhenVisible>
           </section>
         )}
       </div>

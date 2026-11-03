@@ -52,3 +52,19 @@ End-to-end API latency on hosted infrastructure, PostGIS network load time on Su
 Nonce CSP moves HTML, including marketing, to dynamic rendering; public metadata/static assets remain cacheable. Do not cache nonce HTML independently from its matching CSP response. No new latency/throughput improvement is claimed. Maps/charts remain lazy, stores/query responsibilities are unchanged, and no routing/analytics algorithm was replaced.
 
 The selected Render starter compute has 512 MB RAM and one worker/concurrency two. The existing six-graph cache and optional video processing can exceed this on larger networks/media; load-test the approved Calgary pilot on the actual service and set a measured capacity plan before whole-city or Form use. Free cold starts are excluded from the proposed production topology. Monitor in-flight job duration against the 300-second Vercel limit and 240-second lease. Manual upload ingress is 4 MiB to fit Vercel's request limit; direct video and server-to-server COROS flows retain their existing limits.
+
+## Phase 5 mobile lab (2026-11-02)
+
+Authenticated cold-client measurement is now reproducible and rejects development
+builds, broken sessions and unapplied throttling. Three trials/case/build on the
+same M4, real applied 4× CPU and 150 ms / 1638.4 Kbps browser network: Home first
+locale visit LCP 2.678 s (no hydration errors), remembered-locale cold-assets LCP
+0.785 s; Analyze TBT 622 → 37 ms median, LCP 0.770 → 0.778 s. The improvement comes
+from visibility-based initialization of secondary maps/charts, preserving their
+functions and existing bounded series. It does not eliminate first-use engine
+cost or establish physical-phone/field INP. Home differences are noise and its
+first locale visit remains hydration-dependent.
+
+Method, all sanitized trials, first-reveal cost, checks and hardware limitations:
+[Phase 5 report](release/PHASE5_MOBILE_READINESS.md). The previous mobile audit's
+pre-hydration Home result is historical; it is not the baseline for these numbers.

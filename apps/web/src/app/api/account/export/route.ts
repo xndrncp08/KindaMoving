@@ -35,13 +35,20 @@ const TABLES: [string, string][] = [
 export async function GET(request: Request) {
   try {
     const { db, user } = await context(request);
-    const { data: allowed } = await db.rpc('hit_rate_limit', {
-      p_action: 'account_export',
-      p_limit: 5,
-      p_window_s: 86400,
-    });
+    const { data: allowed, error: limitError } = await db.rpc(
+      'hit_rate_limit',
+      {
+        p_action: 'account_export',
+        p_limit: 5,
+        p_window_s: 86400,
+      },
+    );
+    if (limitError)
+      throw new ApiError(503, 'Export is temporarily unavailable.');
     if (allowed === false)
       throw new ApiError(429, 'Exports are limited to 5 per day.');
+    if (allowed !== true)
+      throw new ApiError(503, 'Export is temporarily unavailable.');
     const out: Record<string, unknown> = {
       exported_at: new Date().toISOString(),
       user: { id: user.id, email: user.email },

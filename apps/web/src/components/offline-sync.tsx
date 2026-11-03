@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { keys } from '@/lib/queries';
 import { purgeOtherUsers } from '@/lib/offline/db';
 import {
+  cancelOutbox,
   dismiss,
   flush,
   refreshCounts,
@@ -22,10 +23,11 @@ export function OfflineSync({ userId }: { userId: string }) {
   const rejected = useOffline((s) => s.rejected);
   const syncing = useOffline((s) => s.syncing);
   useEffect(() => {
+    let active = true;
     const set = useOffline.getState().set;
     const sync = async () => {
       const sent = await flush(userId);
-      if (sent) {
+      if (sent && active) {
         toast.success(`${sent} offline report(s) sent.`);
         void client.invalidateQueries({
           queryKey: keys.resource(userId, 'conditions'),
@@ -41,13 +43,15 @@ export function OfflineSync({ userId }: { userId: string }) {
     if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator)
       void navigator.serviceWorker.register('/sw.js').catch(() => undefined);
     void purgeOtherUsers(userId)
-      .then(() => refreshCounts(userId))
+      .then(() => (active ? refreshCounts(userId) : undefined))
       .then(() => {
-        if (navigator.onLine) void sync();
+        if (active && navigator.onLine) void sync();
       });
     window.addEventListener('online', up);
     window.addEventListener('offline', down);
     return () => {
+      active = false;
+      cancelOutbox();
       window.removeEventListener('online', up);
       window.removeEventListener('offline', down);
     };

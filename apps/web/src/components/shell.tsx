@@ -1,4 +1,5 @@
 'use client';
+import { cancelOutbox } from '@/lib/offline/outbox';
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -115,6 +116,7 @@ export function Shell({
     const { data } = browserSupabase().auth.onAuthStateChange(
       (event, session) => {
         if (event === 'SIGNED_OUT' || (session && session.user.id !== userId)) {
+          cancelOutbox();
           client.clear();
           resetStores();
           void purgeOtherUsers(null);
@@ -130,6 +132,7 @@ export function Shell({
       toast.error(error.message);
       return;
     }
+    cancelOutbox();
     client.clear();
     resetStores();
     await purgeOtherUsers(null); // shared devices: no previous user's drafts or queue survive logout

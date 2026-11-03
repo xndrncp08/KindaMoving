@@ -123,3 +123,68 @@ def test_dry_run_reports_disconnected_and_invalid_topology():
     graph.edges[0].v = 99
     with pytest.raises(ValueError):
         module.topology(graph)
+
+
+def test_staging_requires_a_separate_matching_reader_project():
+    ref = 'abcdefghijklmnopqrst'
+    good = {'KM_DEPLOYMENT': 'staging', 'KM_STAGING_SUPABASE_REF': ref,
+            'ANALYTICS_SERVICE_TOKEN': 'a'*32,
+            'NETWORK_DATABASE_URL': f'postgresql://km_network_reader.xxxxxxxxxxxxxxxxxxxx:secret@aws-0.ca-central-1.pooler.supabase.com/postgres?sslmode=verify-full'}
+    assert configuration_errors(good)
+    good['NETWORK_DATABASE_URL'] = f'postgresql://km_network_reader.{ref}:secret@aws-0.ca-central-1.pooler.supabase.com/postgres?sslmode=verify-full'
+    assert not configuration_errors(good)
+    assert configuration_errors({**good, 'KM_STAGING_SUPABASE_REF': 'yqzbsuandpdlvgtgnwln'})
+
+
+def test_preview_helper_rejects_production_overrides_and_shared_ref():
+    import subprocess, os
+    script = Path(__file__).parents[3] / 'scripts/deploy-staging.sh'
+    for args, ref in [(['--prod'], 'abcdefghijklmnopqrst'), ([], 'yqzbsuandpdlvgtgnwln'), ([], '')]:
+        result = subprocess.run(['bash', str(script), *args], env={**os.environ, 'KM_STAGING_SUPABASE_REF': ref}, capture_output=True)
+        assert result.returncode != 0
+
+
+def test_slow_readiness_has_an_http_deadline_and_does_not_spawn_more_probes(monkeypatch):
+    import threading, time
+    from km_analytics import api, deployment
+    release = threading.Event()
+    calls = []
+    def slow():
+        calls.append(True)
+        release.wait(2)
+        return True
+    monkeypatch.setattr(deployment, 'configuration_errors', lambda: [])
+    monkeypatch.setattr(deployment, 'network_ready', slow)
+    monkeypatch.setattr(api, 'READINESS_TIMEOUT_S', .05)
+    api._readiness.update(at=0, ok=False, task=None)
+    with TestClient(app) as client:
+        try:
+            started = time.monotonic()
+            assert client.get('/readyz').status_code == 503
+            assert time.monotonic() - started < .5
+            assert client.get('/healthz').status_code == 200
+            api._readiness['at'] = 0
+            assert client.get('/readyz').status_code == 503
+            assert len(calls) == 1
+        finally:
+            release.set()
+    api._readiness.update(at=0, ok=False, task=None)
+
+
+def test_staging_preflight_and_route_acceptance_reject_wrong_targets():
+    def load(name):
+        spec = importlib.util.spec_from_file_location(name, Path(__file__).parents[3]/'scripts'/f'{name}.py')
+        mod = importlib.util.module_from_spec(spec); spec.loader.exec_module(mod)
+        return mod
+    preflight = load('validate-staging')
+    assert preflight.validate({})
+    ref = 'abcdefghijklmnopqrst'
+    env = {'KM_STAGING_SUPABASE_REF': ref, 'NEXT_PUBLIC_SUPABASE_URL': f'https://{ref}.supabase.co',
+           'NETWORK_DATABASE_URL': f'postgresql://km_network_reader:secret@db.{ref}.supabase.co/postgres?sslmode=verify-full',
+           'ANALYTICS_SERVICE_TOKEN': 'a'*32, 'CRON_SECRET': 'b'*32,
+           'NEXT_PUBLIC_SITE_URL': 'https://web.test', 'ANALYTICS_URL': 'https://analytics.test'}
+    assert not preflight.validate(env)
+    assert preflight.validate({**env, 'NEXT_PUBLIC_SUPABASE_URL': 'https://yqzbsuandpdlvgtgnwln.supabase.co'})
+    routing = load('accept-routing')
+    with pytest.raises(AssertionError): routing.check_result({'status': 'conflict', 'routes': []})
+    with pytest.raises(AssertionError): routing.check_result({'status': 'ok', 'routes': [{'geometry': {'coordinates': [[0, 0], [1, 1]]}}]})

@@ -39,7 +39,13 @@ async function check(page: Page, name: string, vp: string, path: string) {
   await page.goto(path, { waitUntil: 'load' });
   await page.waitForTimeout(2500);
   mkdirSync(SHOTS, { recursive: true });
-  await page.screenshot({ path: `${SHOTS}/${name}-${vp}.png`, fullPage: true });
+  // caret: 'initial' — Playwright's caret hiding injects an inline style that
+  // React reports as a hydration attribute mismatch if hydration is still running.
+  await page.screenshot({
+    path: `${SHOTS}/${name}-${vp}.png`,
+    fullPage: true,
+    caret: 'initial',
+  });
   const findings = await audit(page);
   writeFileSync(
     `${SHOTS}/${name}-${vp}.json`,

@@ -438,5 +438,21 @@
     "hydrationErrors": [],
     "measuredAppCommit": "c80eea7",
     "method": "Separate Puppeteer navigation without Lighthouse or axe scrolling; resources may already be fetched at mount"
+  },
+  "toolchainVerification": {
+    "lighthouse": "13.5.0",
+    "puppeteerCore": "25.16.0",
+    "node": "22.23.4",
+    "coldHomeAndAnalyzeSmoke": "passed with applied throttling and valid authentication",
+    "revealSmoke": "passed at 393x852; zero hydration errors",
+    "comparisonPolicy": "Smoke results are not mixed into the historical 12.8.2 medians",
+    "fullAudit": {
+      "high": 0,
+      "critical": 0,
+      "moderateDevelopment": 16
+    },
+    "productionAudit": {
+      "total": 0
+    }
   }
 }

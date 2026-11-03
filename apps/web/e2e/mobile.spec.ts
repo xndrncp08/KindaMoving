@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type BrowserContext } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { VIEWPORTS, audit } from './mobile-audit';
 
@@ -78,7 +78,7 @@ test.describe('mobile audit', () => {
 
   test.describe('signed in', () => {
     test.skip(!signedIn, 'set KM_E2E_EMAIL and KM_E2E_PASSWORD (test account)');
-    let state: string;
+    let state: Awaited<ReturnType<BrowserContext['storageState']>>;
     let ids: Record<string, string> = {};
     test.beforeAll(async ({ browser }) => {
       const page = await browser.newPage({ storageState: privateState });
@@ -98,8 +98,8 @@ test.describe('mobile audit', () => {
         (r) => Math.abs(r.distance_m - runs[0].distance_m) < 100,
       );
       ids = { run: runs[0]?.id, a: same[0]?.id, b: same[1]?.id ?? runs[1]?.id };
-      state = test.info().outputPath('state.json');
-      await page.context().storageState({ path: state });
+      // Auth cookies stay in memory, outside failure artifacts.
+      state = await page.context().storageState();
       await page.close();
     });
     for (const [vp, width, height] of VIEWPORTS)

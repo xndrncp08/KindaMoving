@@ -47,7 +47,7 @@ On phones the order is: **next workout** (one line when nothing is scheduled), *
 ## KM Analyze: an instrument that fits
 
 - A sticky, horizontally scrolling **section bar** (Summary, Streams, Map, Splits, Efforts, Context). Links only appear for sections that exist; Splits renders a placeholder while loading, so its anchor always works.
-- **Charts:** a horizontal drag scrubs the synced cursor (`touch-action: pan-y` keeps vertical page scrolling). The cursor readout repeats the values as text, and per-km values are also in the Splits table, which is the accessible alternative to the charts.
+- **Charts:** a labelled sample slider supports keyboard arrows and touch without relying on a hover. Secondary charts/maps mount when visible, keep their reserved space, and have an explicit Load button. A horizontal drag scrubs the synced cursor (`touch-action: pan-y` keeps vertical page scrolling). The cursor readout repeats the values as text, and per-km values are also in the Splits table, which is the accessible alternative to the charts.
 - **Splits at 320 px:** Km, Pace, deviation bar with a signed %, and HR. Distance, time and climb return on wider screens.
 - **Embedded maps** (run, Ghost, Conditions) use MapLibre cooperative gestures: one finger scrolls the page, two fingers move the map. The full-screen planner opts out.
 
@@ -90,3 +90,39 @@ Run on at least one recent iPhone (Safari, and installed to the Home Screen) and
 7. Turn on airplane mode, report a condition (queued), turn it off: it is sent. Reload: still signed in, on the same page.
 
 Record device model, OS and browser versions, and results in the release report. Emulated results must not be reported as device results.
+
+### Phase 5 hardware sign-off worksheet (all pending)
+
+Use protected staging, an **isolated** synthetic account/project, and a reviewed
+synthetic GPX/FIT and short video. Do not publish test condition reports to the
+shared database. Keep the reviewer within the existing staging access boundary.
+Record deployment ID/SHA, device model, OS/browser version, CSS viewport,
+standalone/browser mode, network, date/time, result and a redacted recording.
+
+| Required surface              | Sizes                            | Portrait/landscape | Hardware result |
+| ----------------------------- | -------------------------------- | ------------------ | --------------- |
+| iOS Safari                    | Small (e.g. SE) and large iPhone | Both               | Pending         |
+| Installed iOS Home Screen app | Same devices                     | Both               | Pending         |
+| Android Chrome                | Small/mid-range and large phone  | Both               | Pending         |
+| Installed Android PWA         | Same devices                     | Both               | Pending         |
+
+Repeat the following on each surface. A Playwright device profile does not fill
+any cell in this table.
+
+| Case                 | Exact actions                                                                                                                                                                                                                        | Pass condition                                                                                                                                                                        |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Cold Home/date       | Clear only site cache/storage, sign in with synthetic account; open Home before locale cookies exist, then reload. Repeat near local midnight.                                                                                       | Correct week/date after hydration, no React error, no flashing wrong day; remembered visit paints server content. Capture a remote-inspector trace separately from lab Lighthouse.    |
+| Insets/chrome        | Home, run, planner: expand/collapse address bar, rotate both ways, scroll to the last control, zoom text to 200%.                                                                                                                    | No notch/home-indicator overlap, blank viewport strip, horizontal page scroll or unreachable controls. Browser zoom remains enabled.                                                  |
+| Keyboard             | Focus planner distance then Conditions details; type, show validation, switch fields, rotate while keyboard is open, dismiss via platform action.                                                                                    | Field/error reachable above keyboard; fixed tabs hide for text entry and return after blur. No sheet jump or trapped scroll.                                                          |
+| GPS                  | From fresh permission state tap My Location; grant, deny, revoke in OS settings, then retry (include timeout/disabled GPS).                                                                                                          | Honest error/status, no fabricated position, map-centre/manual selection remains usable. No repeated permission loop.                                                                 |
+| Map gestures         | Embedded run/Conditions/Ghost: swipe one finger vertically, then pan with two and pinch. Full-screen planner: pan with one finger and pinch.                                                                                         | Page scroll remains available on embedded maps; cooperative hint works; map remains interactive without scrolling the page in full-screen mode.                                       |
+| Sheet                | Slow drag and fling through all stops; scroll a long sheet to both ends; interrupt a handle drag by rotating; use handle keyboard alternatives with a hardware keyboard. Reload `?sheet=full` and return from another screen.        | No scroll/drag conflict or lost last action, cancellation keeps last committed stop, URL/reload restores it. Momentum does not move the map unexpectedly.                             |
+| Back/navigation      | Open More, Android Back / iOS edge swipe; follow a More link, then Back. Repeat standalone, including system app switch/resume.                                                                                                      | Sheet closes before page navigation, no duplicate history entry, expected page restored. Record standalone iOS behavior explicitly.                                                   |
+| File chooser/failure | Choose synthetic FIT/GPX from Files/Drive, cancel once, select a malformed file and one above 4 MiB; in isolated staging, interrupt a valid upload then retry. Pick/record a short synthetic video only if Form capacity is enabled. | Cancel is harmless, validation honest, retry retains selection where the OS permits it; no duplicate import. A 202 response alone is not a processed import.                          |
+| Offline recovery     | Load Conditions online, airplane mode, queue a synthetic report; reload, force-close/reopen, reconnect. Repeat lost-response retry; switch/logout accounts with pending items.                                                       | Queue survives restart for the same account, one server `client_id`, rejection displayed, other accounts cannot see or replay it. Run only with isolated data and verify server rows. |
+| GPX/COROS handoff    | Export a reviewed saved route; save/open GPX via iOS share/Files and Android Downloads. Open in installed COROS if supported. OAuth/sync only with an expressly authorized account.                                                  | Valid GPX/coordinates, download reachable after resume, actual app handoff recorded. File opening is not OAuth/sync acceptance.                                                       |
+| Accessibility        | VoiceOver/TalkBack: navigate headings, sheet handle, chart sample slider, file input, error and offline status. Test reduced motion and both themes outdoors.                                                                        | Controls have meaningful names, slider values include units, focus is visible/ordered, no gesture-only action, status/rejection announced without continuous chart chatter.           |
+
+A release reviewer must attach actual results and unresolved defects before private
+beta invitations. Installed PWA, Safari, OS keyboards, GPS, native pickers, pinch
+latency and momentum remain hardware gates even when emulation passes.

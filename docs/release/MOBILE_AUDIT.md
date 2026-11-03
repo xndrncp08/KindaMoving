@@ -120,3 +120,11 @@ Earlier signed-in "before" figures (Home 5.3 s, run 5.0 s) came from an injected
 4. Bottom-sheet drags were tested with emulated pointer input, not real touch latency or momentum.
 5. Tracks and Community do not exist in the product, so there was nothing to audit for them.
 6. Production deployment blockers from Phase 4 are unchanged: the Render secrets, the read-only DB login and the Calgary import DSN all need the operator.
+
+## Phase 5 follow-up
+
+The original measurements/status above remain the historical mobile-redesign
+audit. [Phase 5](PHASE5_MOBILE_READINESS.md) supplies valid authenticated cold-client
+Home measurements, an Analyze blocking-time fix, new regressions, current protected
+staging observations and the pending physical-device/beta gates. It does not turn
+the emulated checks here into hardware results.

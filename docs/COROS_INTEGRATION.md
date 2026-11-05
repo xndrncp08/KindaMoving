@@ -57,6 +57,8 @@ The parser reads `structuredContent` first, then JSON in text content, then the 
 
 Writing uses the documented `uploadRouteFile` (GPX) and workout tools, and always requires an explicit per-item confirmation in the UI (see [ROUTING.md](ROUTING.md) and [TRAINING.md](TRAINING.md)). Following COROS's own guidance, a write whose outcome is uncertain (timeout or interrupted response) is **not** retried automatically. The user is asked to check the COROS app first.
 
+This includes failures while reading the response body and successful HTTP responses with missing/invalid MCP result objects. The shared transport classifies those as transient transport failures; the existing write wrapper converts them to permanent `outcome_uncertain` jobs with no automatic retry. A job-level route-write regression verifies that boundary. Read/sync calls retain ordinary retry behavior.
+
 ## Developer access fallback
 
 Everything above needs only the public MCP service and a user's COROS account. No partner credentials are needed. Without a COROS account, users import via GPX/FIT upload, and routes export as GPX with COROS app import instructions.

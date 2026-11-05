@@ -4,6 +4,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { corosSync } from '@/lib/jobs/coros-sync';
 import { execute, type Job } from '@/lib/jobs/runner';
 import { TransientError } from '@/lib/server/errors';
+import { rpc } from '@/lib/coros/mcp';
 
 const { callTool, analytics } = vi.hoisted(() => ({
   callTool: vi.fn(),
@@ -69,7 +70,21 @@ function fixture(
               );
         let data: unknown = null;
         if (r.method === 'GET')
-          data = r.table === 'connected_provider_accounts' ? account : [record];
+          data =
+            r.table === 'connected_provider_accounts'
+              ? account
+              : r.table === 'routes'
+                ? {
+                    title: 'Synthetic route',
+                    description: '',
+                    path: {
+                      coordinates: [
+                        [-114.07, 51.05],
+                        [-114.08, 51.06],
+                      ],
+                    },
+                  }
+                : [record];
         if (r.table === 'import_activity')
           data = { activity_id: 'activity', outcome: 'created' };
         if (r.table === 'heartbeat_job') data = false;
@@ -237,6 +252,34 @@ it('retries an interrupted FIT body without storing its raw error', async () => 
   expect(requests.find((r) => r.table === 'finish_job')?.body).toMatchObject({
     p_code: 'coros_download',
     p_message: 'FIT download failed.',
+  });
+});
+
+it('requires a new confirmation after an interrupted route-write response', async () => {
+  const { db, account, requests } = fixture();
+  account.capabilities.push('uploadRouteFile');
+  callTool.mockImplementation(() =>
+    rpc('https://mcpus.coros.com/mcp', 'synthetic', 'tools/call', {}),
+  );
+  vi.mocked(fetch).mockResolvedValue(
+    new Response(
+      new ReadableStream({
+        start(controller) {
+          controller.error(new Error('private response detail'));
+        },
+      }),
+    ),
+  );
+  expect(
+    await execute(db, 'worker', {
+      ...job,
+      kind: 'coros_route_push',
+      payload: { route_id: 'a0000000-0000-4000-8000-000000000001' },
+    }),
+  ).toBe('failed');
+  expect(requests.find((r) => r.table === 'finish_job')?.body).toMatchObject({
+    p_code: 'outcome_uncertain',
+    p_retry_after_s: null,
   });
 });
 

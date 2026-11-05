@@ -76,6 +76,11 @@ async function listWindow(
   const { records, unparsed } = parseSportRecords(result);
   stats.unparsed += unparsed;
   const days = Math.round((end.getTime() - start.getTime()) / 86400000);
+  if (records.length >= LIST_LIMIT && days < 1)
+    throw new PermanentError(
+      'COROS activity listing filled a single day; sync is incomplete. Contact support before retrying.',
+      'coros_truncated',
+    );
   if (records.length >= LIST_LIMIT && days >= 1) {
     const mid = new Date(start.getTime() + Math.floor(days / 2) * 86400000);
     await listWindow(client, start, mid, out, stats);
@@ -107,7 +112,7 @@ async function download(url: string) {
     response = await fetch(u, {
       signal: AbortSignal.timeout(30000),
       cache: 'no-store',
-      redirect: 'follow',
+      redirect: 'error',
     });
   } catch {
     throw new TransientError('FIT download failed.', 'coros_download');
@@ -119,12 +124,39 @@ async function download(url: string) {
       'FIT download link was rejected or expired.',
       'coros_link',
     );
-  if (Number(response.headers.get('content-length') ?? 0) > MAX_FIT_BYTES)
+  if (Number(response.headers.get('content-length') ?? 0) > MAX_FIT_BYTES) {
+    await response.body?.cancel().catch(() => {});
     throw new PermanentError('FIT file too large.', 'too_large');
-  const bytes = await response.arrayBuffer();
-  if (bytes.byteLength > MAX_FIT_BYTES)
-    throw new PermanentError('FIT file too large.', 'too_large');
-  return bytes;
+  }
+  const reader = response.body?.getReader();
+  if (!reader)
+    throw new TransientError('FIT download failed.', 'coros_download');
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  try {
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      size += value.byteLength;
+      if (size > MAX_FIT_BYTES) {
+        await reader.cancel().catch(() => {});
+        throw new PermanentError('FIT file too large.', 'too_large');
+      }
+      chunks.push(value);
+    }
+  } catch (error) {
+    if (error instanceof PermanentError) throw error;
+    throw new TransientError('FIT download failed.', 'coros_download');
+  } finally {
+    reader.releaseLock();
+  }
+  const bytes = new Uint8Array(size);
+  let offset = 0;
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return bytes.buffer;
 }
 
 /**
@@ -165,8 +197,8 @@ export async function corosSync({ db, job, heartbeat }: JobContext) {
         found: listed.size,
       });
     }
-    if (listed.size)
-      await db.from('provider_records').upsert(
+    if (listed.size) {
+      const { error } = await db.from('provider_records').upsert(
         [...listed.values()].map((r) => ({
           user_id: job.user_id,
           account_id: account.id,
@@ -181,6 +213,9 @@ export async function corosSync({ db, job, heartbeat }: JobContext) {
         })),
         { onConflict: 'account_id,label_id', ignoreDuplicates: true },
       );
+      if (error)
+        throw new TransientError('Activity listing could not be saved.', 'db');
+    }
   }
 
   const { data: pending, error } = await db
@@ -202,7 +237,7 @@ export async function corosSync({ db, job, heartbeat }: JobContext) {
     quota = quotaState(quota);
     if (!quotaAvailable(quota)) {
       counts.deferred = pending!.length - i;
-      await db
+      const { error } = await db
         .from('provider_records')
         .update({
           status: 'deferred_quota',
@@ -210,27 +245,43 @@ export async function corosSync({ db, job, heartbeat }: JobContext) {
         })
         .eq('account_id', account.id)
         .in('status', ['seen']);
+      if (error)
+        throw new TransientError('Quota deferral could not be saved.', 'db');
       break;
     }
+    // Reserve before the external call: a timeout can still spend COROS's quota.
+    quota = { ...quota, used: quota.used + 1 };
+    const { data: reserved, error: reserveError } = await db
+      .from('connected_provider_accounts')
+      .update({ fit_quota: quota })
+      .eq('id', account.id)
+      .eq('user_id', job.user_id)
+      .eq('status', 'connected')
+      .eq('fit_quota', JSON.stringify(account.fit_quota))
+      .select('fit_quota')
+      .maybeSingle();
+    if (reserveError || !reserved)
+      throw new TransientError(
+        'Quota changed or could not be saved; retrying.',
+        'db',
+      );
+    account.fit_quota = quota;
     try {
       const links = await client.callTool('queryActivityFitFileDownloadUrls', {
         labelId: rec.label_id,
         sportType: rec.sport_type,
         limit: 1,
       });
-      quota = { ...quota, used: quota.used + 1 };
-      await db
-        .from('connected_provider_accounts')
-        .update({ fit_quota: quota })
-        .eq('id', account.id);
       if (links.isError) {
         const msg = text(links);
         if (/quota|limit|exceed/i.test(msg)) {
           quota = { ...quota, used: 50 };
-          await db
+          const { error } = await db
             .from('connected_provider_accounts')
             .update({ fit_quota: quota })
             .eq('id', account.id);
+          if (error)
+            throw new TransientError('Quota limit could not be saved.', 'db');
           counts.deferred++;
           continue;
         }
@@ -264,7 +315,7 @@ export async function corosSync({ db, job, heartbeat }: JobContext) {
         throw new TransientError('Import could not be saved.', 'db');
       const outcome = saved.data as { activity_id: string; outcome: string };
       await attachWeather(db, job.user_id, outcome, parsed);
-      await db
+      const { error } = await db
         .from('provider_records')
         .update({
           status: outcome.outcome === 'duplicate' ? 'duplicate' : 'imported',
@@ -273,21 +324,25 @@ export async function corosSync({ db, job, heartbeat }: JobContext) {
           detail: null,
         })
         .eq('id', rec.id);
+      if (error)
+        throw new TransientError('Import status could not be saved.', 'db');
       counts[outcome.outcome === 'duplicate' ? 'duplicate' : 'imported']++;
     } catch (e) {
       // A transient failure stops this run (the job retries); a permanent one is isolated to its record.
       if (!(e instanceof PermanentError)) throw e;
       counts.failed++;
-      await db
+      const { error } = await db
         .from('provider_records')
         .update({ status: 'failed', detail: e.message.slice(0, 300) })
         .eq('id', rec.id);
+      if (error)
+        throw new TransientError('Failure status could not be saved.', 'db');
     }
     await heartbeat({ stage: 'importing', ...counts });
   }
   const followUp = remaining > 0 || counts.deferred > 0;
-  if (followUp)
-    await db.from('sync_jobs').insert({
+  if (followUp) {
+    const { error } = await db.from('sync_jobs').insert({
       user_id: job.user_id,
       account_id: account.id,
       kind: 'coros_sync',
@@ -296,7 +351,23 @@ export async function corosSync({ db, job, heartbeat }: JobContext) {
       run_after:
         counts.deferred > 0 ? quota.resets_at : new Date().toISOString(),
     });
-  await db
+    // Retrying after a later failed write may encounter this job's existing continuation.
+    if (error) {
+      const existing =
+        error.code === '23505'
+          ? await db
+              .from('sync_jobs')
+              .select('id')
+              .eq('user_id', job.user_id)
+              .eq('kind', 'coros_sync')
+              .eq('idempotency_key', 'continue-' + job.id)
+              .maybeSingle()
+          : null;
+      if (!existing?.data || existing.error)
+        throw new TransientError('Sync continuation could not be saved.', 'db');
+    }
+  }
+  const { error: cursorError } = await db
     .from('connected_provider_accounts')
     .update({
       last_sync_at: new Date().toISOString(),
@@ -306,6 +377,8 @@ export async function corosSync({ db, job, heartbeat }: JobContext) {
         : { sync_cursor: today.toISOString().slice(0, 10) }),
     })
     .eq('id', account.id);
+  if (cursorError)
+    throw new TransientError('Sync completion could not be saved.', 'db');
   return {
     listed: listed.size,
     unparsed_records: stats.unparsed,

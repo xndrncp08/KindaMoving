@@ -171,6 +171,32 @@ describe('COROS OAuth', () => {
 });
 
 describe('MCP transport', () => {
+  it('classifies interrupted bodies so uncertain writes cannot auto-retry', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.error(new Error('private response detail'));
+          },
+        }),
+      ),
+    );
+    await expect(
+      rpc('https://mcpus.coros.com/mcp', 't', 'tools/call', {}),
+    ).rejects.toMatchObject({
+      code: 'coros_unreachable',
+      message: 'COROS response was interrupted.',
+    });
+  });
+  it.each(['<html>proxy</html>', '{}', '{"result":null}'])(
+    'rejects incomplete successful RPC response %s',
+    async (body) => {
+      fetchMock.mockResolvedValueOnce(new Response(body));
+      await expect(
+        rpc('https://mcpus.coros.com/mcp', 't', 'tools/call', {}),
+      ).rejects.toBeInstanceOf(TransientError);
+    },
+  );
   it('parses JSON and SSE bodies', () => {
     expect(
       parseRpcBody(

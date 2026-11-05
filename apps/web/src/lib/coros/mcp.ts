@@ -66,6 +66,7 @@ export async function rpc(
   try {
     response = await fetch(url, {
       method: 'POST',
+      redirect: 'error',
       headers: {
         Authorization: 'Bearer ' + token,
         'Content-Type': 'application/json',
@@ -94,19 +95,36 @@ export async function rpc(
       'COROS is temporarily unavailable.',
       'coros_' + response.status,
     );
-  const body = parseRpcBody(
-    await response.text(),
-    response.headers.get('content-type'),
-  );
-  if (!response.ok || !body)
+  let body;
+  try {
+    body = parseRpcBody(
+      await response.text(),
+      response.headers.get('content-type'),
+    );
+  } catch {
+    throw new TransientError(
+      'COROS response was interrupted.',
+      'coros_unreachable',
+    );
+  }
+  if (!response.ok)
     throw new PermanentError(
       'Unexpected COROS response.',
       'coros_' + response.status,
     );
-  if (body.error)
+  if (body?.error)
     throw new PermanentError(
       'COROS rejected the request: ' + String(body.error.message).slice(0, 200),
       'coros_rpc',
+    );
+  if (
+    !body?.result ||
+    typeof body.result !== 'object' ||
+    Array.isArray(body.result)
+  )
+    throw new TransientError(
+      'COROS returned an incomplete response.',
+      'coros_invalid_response',
     );
   return body.result as Record<string, unknown>;
 }

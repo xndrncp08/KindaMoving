@@ -11,6 +11,23 @@ do $$ begin
   assert public.vault_client('https://mcpus.coros.com', 'https://km.test/cb', 'c1') = 'c1';
   assert public.vault_client('https://mcpus.coros.com', 'https://km.test/cb', 'c2') = 'c1', 'First registration wins';
   assert (select count(*) from public.vault_get('a1100000-0000-4000-8000-0000000000aa', 'b1000000-0000-4000-8000-0000000000bb')) = 0, 'Vault is owner-scoped';
+  -- The worker reserves via a conditional JSONB update; stale readers must spend nothing.
+  declare
+    old_quota jsonb := '{"window_start":"2026-11-04T00:00:00Z","used":47}';
+    next_quota jsonb := '{"window_start":"2026-11-04T00:00:00Z","used":48}';
+    changed integer;
+  begin
+    update connected_provider_accounts set fit_quota=old_quota
+      where id='a1100000-0000-4000-8000-0000000000aa';
+    update connected_provider_accounts set fit_quota=next_quota
+      where id='a1100000-0000-4000-8000-0000000000aa' and status='connected' and fit_quota=old_quota;
+    get diagnostics changed = row_count;
+    assert changed=1, 'First reservation persists';
+    update connected_provider_accounts set fit_quota=next_quota
+      where id='a1100000-0000-4000-8000-0000000000aa' and status='connected' and fit_quota=old_quota;
+    get diagnostics changed = row_count;
+    assert changed=0, 'A stale second worker cannot spend the same slot';
+  end;
   begin insert into connected_provider_accounts(user_id, provider, issuer) values ('b1000000-0000-4000-8000-0000000000bb', 'coros', 'https://evil.example');
     raise exception 'Expected issuer check'; exception when check_violation then null; end;
 end $$;

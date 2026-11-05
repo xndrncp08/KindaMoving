@@ -37,6 +37,16 @@ def test_store_and_indexed_load_round_trip(loaded):
     assert len(db_graph.edges) == len(g.edges), "the bbox query must return the whole imported region"
     assert sum(e.length for e in db_graph.edges) == pytest.approx(sum(e.length for e in g.edges), rel=1e-4)
     assert any(n.ele is not None for n in db_graph.nodes.values())
+    import psycopg
+    with psycopg.connect(DSN) as conn:
+        for table in ('network_nodes', 'network_edges'):
+            assert conn.execute(f"select count(*) from public.{table} where region='calgary-test' and not extensions.st_isvalid(geom)").fetchone()[0] == 0
+            index = conn.execute("select indexdef from pg_indexes where schemaname='public' and indexname=%s", (table + '_geom',)).fetchone()
+            assert index and 'USING gist (geom)' in index[0]
+        crossings, signals = conn.execute("select count(*) filter(where crossing is not null), count(*) filter(where signals) from public.network_nodes where region='calgary-test'").fetchone()
+        used = {e.u for e in g.edges} | {e.v for e in g.edges}
+        assert crossings == sum(g.nodes[n].crossing is not None for n in used)
+        assert signals == sum(g.nodes[n].signals for n in used)
 
 
 def test_real_tempo_route_on_bow_river(loaded):

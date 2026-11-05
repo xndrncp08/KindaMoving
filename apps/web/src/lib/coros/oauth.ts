@@ -104,6 +104,7 @@ export async function register(meta: Metadata, redirectUri: string) {
   try {
     response = await fetch(meta.registration_endpoint, {
       method: 'POST',
+      redirect: 'error',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         client_name: 'KindaMoving',
@@ -174,6 +175,7 @@ export async function tokenRequest(
   try {
     response = await fetch(meta.token_endpoint, {
       method: 'POST',
+      redirect: 'error',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: 'application/json',
@@ -211,6 +213,7 @@ export async function revoke(meta: Metadata, clientId: string, token: string) {
   try {
     const response = await fetch(meta.revocation_endpoint, {
       method: 'POST',
+      redirect: 'error',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ token, client_id: clientId }),
       signal: AbortSignal.timeout(10000),

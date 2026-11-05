@@ -66,6 +66,7 @@ export async function rpc(
   try {
     response = await fetch(url, {
       method: 'POST',
+      redirect: 'error',
       headers: {
         Authorization: 'Bearer ' + token,
         'Content-Type': 'application/json',

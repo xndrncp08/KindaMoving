@@ -5,6 +5,7 @@ import {
   corosUrl,
   discover,
   register,
+  revoke,
   tokenRequest,
   type Metadata,
 } from '@/lib/coros/oauth';
@@ -17,6 +18,7 @@ import {
 } from '@/lib/coros/parse';
 import { open, seal } from '@/lib/server/crypto';
 import { PermanentError, TransientError } from '@/lib/server/errors';
+import { createServer } from 'node:http';
 
 // Captured verbatim (fields used) from https://mcp.coros.com on 2026-10-31.
 const PROTECTED = {
@@ -50,6 +52,55 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('COROS OAuth', () => {
+  it.each(['token', 'revoke', 'register', 'rpc'])(
+    'does not redirect a %s POST to another endpoint',
+    async (kind) => {
+      vi.unstubAllGlobals();
+      let forwarded = false;
+      const server = createServer((request, response) => {
+        if (request.url === '/start') {
+          response.writeHead(307, { Location: '/sink' }).end();
+        } else {
+          forwarded = true;
+          response.writeHead(200, { 'Content-Type': 'application/json' }).end(
+            JSON.stringify({
+              access_token: 'synthetic',
+              client_id: 'synthetic',
+              result: {},
+            }),
+          );
+        }
+      });
+      await new Promise<void>((resolve) =>
+        server.listen(0, '127.0.0.1', resolve),
+      );
+      const address = server.address() as { port: number };
+      const endpoint = `http://127.0.0.1:${address.port}/start`;
+      const meta = {
+        ...AS,
+        mcp_url: '',
+        token_endpoint: endpoint,
+        revocation_endpoint: endpoint,
+        registration_endpoint: endpoint,
+      };
+      try {
+        if (kind === 'revoke')
+          expect(await revoke(meta, 'client', 'synthetic-refresh')).toBe(false);
+        else
+          await expect(
+            kind === 'token'
+              ? tokenRequest(meta, { refresh_token: 'synthetic-refresh' })
+              : kind === 'register'
+                ? register(meta, 'https://km.test/callback')
+                : rpc(endpoint, 'synthetic-access', 'tools/list', {}),
+          ).rejects.toBeInstanceOf(TransientError);
+        expect(forwarded).toBe(false);
+      } finally {
+        server.closeAllConnections();
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+      }
+    },
+  );
   it('discovers endpoints through RFC 9728 then RFC 8414', async () => {
     fetchMock
       .mockResolvedValueOnce(json(PROTECTED))
@@ -120,6 +171,32 @@ describe('COROS OAuth', () => {
 });
 
 describe('MCP transport', () => {
+  it('classifies interrupted bodies so uncertain writes cannot auto-retry', async () => {
+    fetchMock.mockResolvedValueOnce(
+      new Response(
+        new ReadableStream({
+          start(controller) {
+            controller.error(new Error('private response detail'));
+          },
+        }),
+      ),
+    );
+    await expect(
+      rpc('https://mcpus.coros.com/mcp', 't', 'tools/call', {}),
+    ).rejects.toMatchObject({
+      code: 'coros_unreachable',
+      message: 'COROS response was interrupted.',
+    });
+  });
+  it.each(['<html>proxy</html>', '{}', '{"result":null}'])(
+    'rejects incomplete successful RPC response %s',
+    async (body) => {
+      fetchMock.mockResolvedValueOnce(new Response(body));
+      await expect(
+        rpc('https://mcpus.coros.com/mcp', 't', 'tools/call', {}),
+      ).rejects.toBeInstanceOf(TransientError);
+    },
+  );
   it('parses JSON and SSE bodies', () => {
     expect(
       parseRpcBody(

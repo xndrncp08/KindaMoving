@@ -41,11 +41,13 @@ GET /api/coros/callback?code&state
 ## Activity synchronization (`coros_sync` job)
 
 1. **Window:** first sync covers 30 days. Later syncs run from `sync_cursor − 2 days` (late watch uploads). "Import last 90 days" sets an explicit backfill (max 365).
-2. **Listing:** `querySportRecords(startDate, endDate, limit 50)` in 7-day windows. A window returning ≥ 50 records is halved recursively, so pages are never silently truncated.
+2. **Listing:** `querySportRecords(startDate, endDate, limit 50)` in 7-day windows. A window returning ≥ 50 records is halved recursively. A full single day fails with `coros_truncated` and does not advance the cursor, because the documented API provides no pagination guarantee for that case.
 3. **Records:** each `labelId` is stored once in `provider_records` (unique per account). Non-running sport codes (anything outside 100–103) are recorded as `skipped` with a reason.
 4. **Import:** `queryActivityFitFileDownloadUrls(labelId, sportType, limit 1)` → HTTPS download (≤ 25 MB, 30 s) → the same analytics parser as uploads → `import_activity(user, 'coros', labelId)`. Deduplication against files and manual entries is the same as for uploads (see [ACTIVITY_PROCESSING.md](ACTIVITY_PROCESSING.md)).
-5. **Quota:** COROS allows 50 FIT files (downloads and links) per platform user per fixed 24 h window. KindaMoving tracks usage in `fit_quota`, stops at 48, marks the rest `deferred_quota`, and schedules a continuation job at the window reset. A quota error reported by COROS triggers the same deferral.
-6. **Failures:** permanent per-record errors mark only that record `failed`. Transient errors (network, 5xx, 429 with `Retry-After`) retry the job with backoff. The time budget (40 s) hands remaining work to an idempotent continuation job.
+5. **Quota:** COROS allows 50 FIT files (downloads and links) per platform user per fixed 24 h window. KindaMoving reserves a slot in `fit_quota` **before** requesting a link, stops at 48, marks the rest `deferred_quota`, and schedules a continuation job at the window reset. The reservation compares the previous JSONB value and connected status atomically; a stale/disconnected worker retries without requesting a link. An interrupted call retains its reservation because COROS may have spent it. This can conservatively defer imports early; it cannot establish usage by other clients. A quota error reported by COROS triggers the same deferral.
+6. **Failures:** permanent per-record errors mark only that record `failed`. Transient errors (network, 5xx, 429 with `Retry-After`) retry the job with backoff. Failed persistence of listing, quota, record status, continuation or completion also retries with redacted errors. Completion advances the cursor last. A retried continuation insert accepts a uniqueness conflict only after finding the same owner's matching continuation. The time budget (40 s) hands remaining work to that job.
+
+OAuth registration/exchange/revocation and MCP POSTs reject redirects; discovery resolves the regional endpoint before credentials are sent. FIT downloads also reject redirects, enforce the 25 MiB cap while streaming (including missing/false Content-Length), cancel oversized bodies and retry interrupted bodies. A future provider redirect/CDN change needs reviewed endpoint handling and live acceptance; do not re-enable unrestricted redirects to make it pass. These controls are covered by synthetic PostgREST/stream tests, real loopback HTTP 307 tests and the disposable PostgreSQL quota contract. No authorized COROS account or PACE 4 acceptance is implied.
 
 ### Defensive result parsing
 
@@ -54,6 +56,8 @@ The parser reads `structuredContent` first, then JSON in text content, then the 
 ## Writes to COROS
 
 Writing uses the documented `uploadRouteFile` (GPX) and workout tools, and always requires an explicit per-item confirmation in the UI (see [ROUTING.md](ROUTING.md) and [TRAINING.md](TRAINING.md)). Following COROS's own guidance, a write whose outcome is uncertain (timeout or interrupted response) is **not** retried automatically. The user is asked to check the COROS app first.
+
+This includes failures while reading the response body and successful HTTP responses with missing/invalid MCP result objects. The shared transport classifies those as transient transport failures; the existing write wrapper converts them to permanent `outcome_uncertain` jobs with no automatic retry. A job-level route-write regression verifies that boundary. Read/sync calls retain ordinary retry behavior.
 
 ## Developer access fallback
 

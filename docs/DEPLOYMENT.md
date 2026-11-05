@@ -73,3 +73,5 @@ substitute another Supabase project for the intended inaccessible one.
 ## Phase 6 isolated staging
 
 Use `KM_DEPLOYMENT=staging` with a new approved `KM_STAGING_SUPABASE_REF` on both runtimes. The helper rejects shared refs and CLI overrides; web URL and reader DSN must agree. Existing shared previews are not a deployment target for new acceptance. Separate templates and the exact migration/Auth/Storage/secret/job procedure are in [Phase 6](release/PHASE6_BETA_READINESS.md#isolation-runbook--operator-approval-required). `scripts/validate-staging.py` proves consistency only; no provisioning or credential binding is inferred.
+
+Run Supabase operator commands with this repository's installed **2.122.0** CLI after `npm ci` (`./node_modules/.bin/supabase` from the root). Its `db push --help` was rechecked on November 4. The [CLI v3 change](https://supabase.com/changelog/supabase-cli-v3) changes hosted targeting and confirmation semantics; a globally installed/latest CLI must not be substituted into the v2 runbook. Review that migration separately before changing the pin. The COROS reliability follow-up needs no schema migration or hosted data rewrite.

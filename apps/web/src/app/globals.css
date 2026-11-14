@@ -555,6 +555,10 @@ legend {
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+.form-analysis .table-scroll :is(th, td) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .metric {
   font-size: clamp(1.75rem, 2.6vw, 2.25rem);
   font-weight: 750;

@@ -1,10 +1,22 @@
 import { mkdirSync } from 'node:fs';
+import type { Page } from '@playwright/test';
 import { test, expect } from './fixtures/ui-test';
 import { coordinates, runId } from './fixtures/ui-data';
 
 test.use({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
 const shots = '../../output/playwright/ui-refinement/states';
 test.beforeEach(() => mkdirSync(shots, { recursive: true }));
+async function capture(page: Page, name: string) {
+  await page.evaluate(() => {
+    (document.activeElement as HTMLElement)?.blur();
+    window.scrollTo(0, 0);
+  });
+  await page.screenshot({
+    path: `${shots}/${name}.png`,
+    fullPage: true,
+    caret: 'initial',
+  });
+}
 
 test('the synthetic upstream rejects writes', async ({ request }) => {
   const response = await request.post(
@@ -59,11 +71,7 @@ test('route candidates survive a failed save and retain their metrics', async ({
     'Your candidates are still here',
   );
   await expect(candidates.getByRole('button')).toHaveCount(2);
-  await page.screenshot({
-    path: `${shots}/route-save-error.png`,
-    fullPage: true,
-    caret: 'initial',
-  });
+  await capture(page, 'route-save-error');
 });
 
 test('COROS running and failed sync states retain recovery actions', async ({
@@ -116,11 +124,7 @@ test('COROS running and failed sync states retain recovery actions', async ({
       exact: false,
     }),
   ).toBeVisible();
-  await page.screenshot({
-    path: `${shots}/coros-sync-states.png`,
-    fullPage: true,
-    caret: 'initial',
-  });
+  await capture(page, 'coros-sync-states');
 });
 
 test('conditions retain uncertainty and one-tap severity', async ({ page }) => {
@@ -157,16 +161,13 @@ test('conditions retain uncertainty and one-tap severity', async ({ page }) => {
   await expect(
     page.getByRole('button', { name: 'Avoid', exact: true }),
   ).toHaveAttribute('aria-pressed', 'true');
-  await page.screenshot({
-    path: `${shots}/conditions-observation.png`,
-    fullPage: true,
-    caret: 'initial',
-  });
+  await capture(page, 'conditions-observation');
 });
 
 test('Form shows observed metrics, quality disclosure and failed analyses', async ({
   page,
 }) => {
+  let emptyMetrics = false;
   await page.route('**/api/form', (route) =>
     route.fulfill({
       json: [
@@ -178,10 +179,12 @@ test('Form shows observed metrics, quality disclosure and failed analyses', asyn
           annotated_path: null,
           result: {
             usable: true,
-            metrics: {
-              cadence: { steps_per_min: 172, confidence: 0.84 },
-              trunk_lean: { median: 6, p10: 4, p90: 9, n: 120 },
-            },
+            metrics: emptyMetrics
+              ? {}
+              : {
+                  cadence: { steps_per_min: 172, confidence: 0.84 },
+                  trunk_lean: { median: 6, p10: 4, p90: 9, n: 120 },
+                },
             quality: {
               duration_s: 15,
               fps: 60,
@@ -211,6 +214,12 @@ test('Form shows observed metrics, quality disclosure and failed analyses', asyn
   );
   await page.goto('/app/form');
   await expect(page.getByText('172 spm (confidence 0.84)')).toBeVisible();
+  await expect(page.locator('.form-analysis tbody tr')).toHaveCount(2);
+  expect(
+    await page
+      .locator('.form-analysis .table-scroll')
+      .evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+  ).toBe(true);
   await expect(
     page.getByRole('alert').filter({ hasText: 'Keep your whole body' }),
   ).toBeVisible();
@@ -218,11 +227,13 @@ test('Form shows observed metrics, quality disclosure and failed analyses', asyn
   await expect(
     page.getByText('runner detected in', { exact: false }),
   ).toBeVisible();
-  await page.screenshot({
-    path: `${shots}/form-results.png`,
-    fullPage: true,
-    caret: 'initial',
-  });
+  await capture(page, 'form-results');
+  emptyMetrics = true;
+  await page.reload();
+  await expect(
+    page.getByText('Not enough reliable pose data to report measurements.'),
+  ).toBeVisible();
+  await expect(page.locator('.form-analysis table')).toHaveCount(0);
 });
 
 test('slow and failed streams distinguish loading from absent sensor data', async ({

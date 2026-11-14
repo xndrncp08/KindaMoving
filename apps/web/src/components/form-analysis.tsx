@@ -132,7 +132,7 @@ export function FormAnalysis({ userId }: { userId: string }) {
     (a) => compare.includes(a.id) && a.result?.usable,
   );
   return (
-    <div className="stack">
+    <div className="stack form-analysis">
       <Card>
         <h2>Analyse a short clip</h2>
         <p className="muted">
@@ -253,16 +253,19 @@ export function FormAnalysis({ userId }: { userId: string }) {
                   {w}
                 </p>
               ))}
-              {a.result.usable ? (
+              {a.result.usable &&
+              Object.values(a.result.metrics).some((value) => value != null) ? (
                 <DataTable
                   headers={['Measure', 'Median (10th–90th percentile)']}
                 >
-                  {ROWS.map(([k, name, unit]) => (
-                    <tr key={k}>
-                      <td>{name}</td>
-                      <td>{cell(a, k, unit)}</td>
-                    </tr>
-                  ))}
+                  {ROWS.filter(([key]) => a.result?.metrics[key] != null).map(
+                    ([k, name, unit]) => (
+                      <tr key={k}>
+                        <td>{name}</td>
+                        <td>{cell(a, k, unit)}</td>
+                      </tr>
+                    ),
+                  )}
                 </DataTable>
               ) : (
                 <p>Not enough reliable pose data to report measurements.</p>

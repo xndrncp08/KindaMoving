@@ -20,5 +20,11 @@
     "No hosted account or COROS acceptance",
     "No real-basemap or network-route accuracy proof",
     "No physical devices or screen reader certification"
+  ],
+  "form_followup_checks_passed": 44,
+  "form_followup_states": [
+    "available metrics only",
+    "all metrics missing",
+    "wrapped table without horizontal overflow"
   ]
 }

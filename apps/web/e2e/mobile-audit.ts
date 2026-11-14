@@ -51,6 +51,7 @@ export async function audit(page: Page): Promise<Finding[]> {
         s.display !== 'none' &&
         r.width > 0 &&
         r.height > 0 &&
+        el.checkVisibility() &&
         !el.closest('[hidden],[aria-hidden="true"],.sr-only')
       );
     };

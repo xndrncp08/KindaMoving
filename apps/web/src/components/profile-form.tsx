@@ -10,6 +10,20 @@ import { toast } from 'sonner';
 import { useUnsaved } from './unsaved';
 import { usePreferences } from '@/lib/stores';
 import { useTheme } from 'next-themes';
+const raceLabels = {
+  '5k': '5K',
+  '10k': '10K',
+  half: 'Half marathon',
+  marathon: 'Marathon',
+  other: 'Other',
+};
+const fieldLabels: Record<string, string> = {
+  preferred_name: 'Preferred name',
+  country: 'Country',
+  city: 'City',
+  weekly_distance_m: 'Weekly distance goal',
+  goals: 'Running goals',
+};
 export function ProfileForm({
   userId,
   onboarding = false,
@@ -90,16 +104,24 @@ function Editor({
       >
         <label>
           Preferred name
-          <Input {...register('preferred_name')} />
+          <Input
+            autoComplete="given-name"
+            enterKeyHint="next"
+            {...register('preferred_name')}
+          />
         </label>
-        <label>
-          Country
-          <Input autoComplete="country-name" {...register('country')} />
-        </label>
-        <label>
-          City
-          <Input autoComplete="address-level2" {...register('city')} />
-        </label>
+        {!onboarding && (
+          <>
+            <label>
+              Country
+              <Input autoComplete="country-name" {...register('country')} />
+            </label>
+            <label>
+              City
+              <Input autoComplete="address-level2" {...register('city')} />
+            </label>
+          </>
+        )}
         <label>
           Measurement units
           <select {...register('units')}>
@@ -143,30 +165,37 @@ function Editor({
         <label>
           Preferred race distance
           <select {...register('race_distance')}>
-            {['5k', '10k', 'half', 'marathon', 'other'].map((v) => (
-              <option key={v}>{v}</option>
+            {Object.entries(raceLabels).map(([v, label]) => (
+              <option key={v} value={v}>
+                {label}
+              </option>
             ))}
           </select>
         </label>
-        <label className="full">
-          Personal running goals
-          <textarea {...register('goals')} />
-        </label>
-        <label>
-          <input type="checkbox" {...register('private_profile')} />
-          Keep profile private
-        </label>
-        <label>
-          <input type="checkbox" {...register('notifications')} />
-          Email notifications preference (delivery planned)
-        </label>
+        {/* Onboarding asks only what shapes the first screens; the rest keeps its defaults until Settings. */}
+        {!onboarding && (
+          <>
+            <label className="full">
+              Personal running goals
+              <textarea {...register('goals')} />
+            </label>
+            <label>
+              <input type="checkbox" {...register('private_profile')} />
+              Keep profile private
+            </label>
+            <label>
+              <input type="checkbox" {...register('notifications')} />
+              Email notifications preference (delivery planned)
+            </label>
+          </>
+        )}
         <p className="muted full">
           All running records are private to your account. Nothing is shared
           publicly.
         </p>
         {Object.entries(errors).map(([key, e]) => (
           <p className="field-error full" role="alert" key={key}>
-            {key}: {e.message}
+            {fieldLabels[key] ?? key}: {e.message}
           </p>
         ))}
         {mutation.error && <ErrorState message={mutation.error.message} />}

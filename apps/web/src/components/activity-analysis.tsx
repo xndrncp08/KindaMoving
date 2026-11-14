@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { Activity, Split } from '@km/types';
 import {
   Card,
+  ErrorState,
   Provenance,
   Skeleton,
   Tabs,
@@ -113,7 +114,11 @@ export function ActivityAnalysis({
     <div className="instrument-cell">
       <dt>
         <span className="eyebrow">{label}</span>
-        <Provenance kind={kind} />
+        {kind === 'measured' ? (
+          <span className="sr-only">Measured</span>
+        ) : (
+          <Provenance kind={kind} />
+        )}
       </dt>
       <dd className="metric num">{value}</dd>
       {detail && <dd className="muted">{detail}</dd>}
@@ -242,7 +247,9 @@ export function ActivityAnalysis({
         )}
         {stat(
           'Climb',
-          `${Math.round(a.elevation_gain_m ?? 0)} m`,
+          a.elevation_gain_m == null
+            ? '—'
+            : `${Math.round(a.elevation_gain_m)} m`,
           'measured',
           a.elevation_loss_m != null
             ? `${Math.round(a.elevation_loss_m)} m descent`
@@ -252,9 +259,16 @@ export function ActivityAnalysis({
           'Heart rate',
           a.avg_hr ? `${Math.round(a.avg_hr)} bpm` : '—',
           'measured',
-          a.avg_hr ? `${a.max_hr} max` : 'No sensor data',
+          a.avg_hr
+            ? a.max_hr != null
+              ? `${a.max_hr} max`
+              : undefined
+            : 'No sensor data',
         )}
       </dl>
+      <p className="muted run-meta">
+        Recorded values. Grade-adjusted pace is a model estimate.
+      </p>
       <section className="insights" aria-label="How this run was run">
         {m.classification && (
           <div>
@@ -269,9 +283,7 @@ export function ActivityAnalysis({
         )}
         {m.split_type && (
           <div>
-            <p className="eyebrow">
-              Split <Provenance kind="measured" />
-            </p>
+            <p className="eyebrow">Split</p>
             <p className="insight-value">
               {m.split_type.kind === 'even'
                 ? 'Even'
@@ -285,34 +297,50 @@ export function ActivityAnalysis({
             </p>
           </div>
         )}
-        {m.decoupling && (
-          <div>
-            <p className="eyebrow">
-              Aerobic decoupling <Provenance kind="measured" />
-            </p>
-            <p className="insight-value num">{m.decoupling.decoupling_pct}%</p>
-            <p className="muted">
-              Heart rate rose{' '}
-              {m.decoupling.decoupling_pct > 0 ? 'relative to' : 'less than'}{' '}
-              pace in the second half. Meaningful for steady efforts only.
-            </p>
-          </div>
-        )}
-        {m.pace_cv != null && (
-          <div>
-            <p className="eyebrow">
-              Pace variability <Provenance kind="measured" />
-            </p>
-            <p className="insight-value num">{(m.pace_cv * 100).toFixed(1)}%</p>
-            <p className="muted">Coefficient of variation across km splits</p>
-          </div>
-        )}
       </section>
+      {(m.decoupling || m.pace_cv != null) && (
+        <details className="disclosure">
+          <summary>Advanced readings</summary>
+          <div className="insights">
+            {m.decoupling && (
+              <div>
+                <p className="eyebrow">Aerobic decoupling</p>
+                <p className="insight-value num">
+                  {m.decoupling.decoupling_pct}%
+                </p>
+                <p className="muted">
+                  Heart rate rose{' '}
+                  {m.decoupling.decoupling_pct > 0
+                    ? 'relative to'
+                    : 'less than'}{' '}
+                  pace in the second half. Meaningful for steady efforts only.
+                </p>
+              </div>
+            )}
+            {m.pace_cv != null && (
+              <div>
+                <p className="eyebrow">Pace variability</p>
+                <p className="insight-value num">
+                  {(m.pace_cv * 100).toFixed(1)}%
+                </p>
+                <p className="muted">
+                  Coefficient of variation across km splits
+                </p>
+              </div>
+            )}
+          </div>
+        </details>
+      )}
       <div className="run-panels">
-        <section aria-labelledby="streams-title" className="card">
+        <section aria-labelledby="streams-title" className="stack">
           <h2 id="streams-title">Streams</h2>
           {streams.isPending ? (
             <Skeleton />
+          ) : streams.error ? (
+            <ErrorState
+              message={streams.error.message}
+              retry={() => void streams.refetch()}
+            />
           ) : points.length > 0 ? (
             <WhenVisible label="run charts" height={540}>
               <Charts
@@ -347,6 +375,12 @@ export function ActivityAnalysis({
           </section>
         )}
       </div>
+      {splits.error && (
+        <ErrorState
+          message={splits.error.message}
+          retry={() => void splits.refetch()}
+        />
+      )}
       {splits.isPending && (
         // Rendered while loading so the Splits jump link always has a target.
         <section aria-labelledby="splits-title" className="stack">

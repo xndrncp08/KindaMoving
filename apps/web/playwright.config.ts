@@ -1,6 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: '**/ui-*.spec.ts',
   fullyParallel: true,
   use: {
     launchOptions: { args: ['--enable-unsafe-swiftshader'] },

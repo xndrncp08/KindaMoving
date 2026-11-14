@@ -23,13 +23,13 @@ Measured against the matrix in `apps/web/e2e/mobile-audit.ts`: 320×568, 360×80
 
 ## Navigation
 
-- The tab bar holds the four most frequent destinations. Everything else is in **More**, a bottom sheet with the same Review / Plan / Equip groups as the desktop rail.
+- The tab bar holds the four most frequent destinations. Everything else is in **More**, a bottom sheet with secondary destinations in the same Review / Plan / Equip groups as the desktop rail. Primary tabs are not repeated.
 - **Back closes sheets.** Opening More pushes one history entry (native `pushState`, which the App Router supports). Browser Back and Android Back pop it and close the sheet; Escape or the close button pop it too, so no stray entry remains. Following a link from the sheet replaces it.
 - Deep links keep state: planner start/distance (`?lat&lon&km`), Ghost pair (`?a&b`), list filters (`?q&status&week`).
 
 ## KM Home: glance first
 
-On phones the order is: **next workout** (one line when nothing is scheduled), **this week** (hero distance, goal meter, day strip, time on feet and consistency), **last run**, the **status strip** (COROS sync state, current condition reports near the last map area), recent runs, then shoes. One DOM serves both layouts: CSS `order`, with `display: contents` on the desktop two-up wrapper.
+On phones the order is: **next workout** (one direct workout link, or one line when nothing is scheduled), **this week** (hero distance, goal meter, day strip, time on feet and consistency), **last run**, the **status strip** (COROS sync state, current condition reports near the last map area), earlier recent runs, then shoes. The latest run is not repeated in the history table. One DOM serves both layouts: CSS `order`, with `display: contents` on the desktop two-up wrapper.
 
 ## KM Routes: the map is the screen
 
@@ -42,6 +42,7 @@ On phones the order is: **next workout** (one line when nothing is scheduled), *
   - **Map fit:** routes refit into the visible map whenever the stop changes. The map itself is never resized, because the sheet overlays it.
 - **Landscape phones:** the panel docks left (at most 340 px or 55%). The tools stack in a column beside it, clear of the zoom controls.
 - **Fewer keystrokes:** one-tap distance chips (5, 8, 10, 16, 21.1 km). Route preferences collapse into a disclosure with a one-line summary of the current choices.
+- **Action reachability:** Find Routes stays in a panel footer at half/full stops; peek hides both body and action. The body height reserves the handle and action area without changing sheet drag behavior.
 - **Kept from desktop:** candidate switcher, undo/redo (buttons plus Cmd/Ctrl+Z), Map Centre and My Location as non-gesture start points, conditions overlay, GPX export, and the unsaved-candidates guard.
 
 ## KM Analyze: an instrument that fits
@@ -56,7 +57,7 @@ On phones the order is: **next workout** (one line when nothing is scheduled), *
 - **Conditions** (for reporting outdoors): map first, **Use My Location**, and one-tap chips for kind, severity and when. Details are optional.
 - **Training:** the week renders as a vertical agenda (day | workouts, or "Rest"), not seven 140 px columns.
 - **Ghost:** the scrubber spans the full width above Play and Speed.
-- **Runs:** a compact import card with the platform file chooser styled as a full-width button. Phone rows keep date, distance, pace and compare; edit and delete live on the run's page (delete is confirmed).
+- **Runs:** an import disclosure (opened by the shell’s Import link) with the platform file chooser styled as a full-width button. Phone rows keep date, distance, pace and compare; edit and delete live on the run's page (delete is confirmed).
 - **Settings and onboarding:** the weekly goal is entered in km or mi (stored as metres).
 
 ## Automated checks
@@ -126,3 +127,9 @@ any cell in this table.
 A release reviewer must attach actual results and unresolved defects before private
 beta invitations. Installed PWA, Safari, OS keyboards, GPS, native pickers, pinch
 latency and momentum remain hardware gates even when emulation passes.
+
+## Credential-free refinement QA
+
+`npm run test:ui` runs 19 synthetic screens in both themes at phone/desktop sizes, axe WCAG A/AA scans and interaction/state regressions. `KM_UI_MATRIX=1 npm run test:ui` uses all 14 sizes above, with the existing matrix’s touch/mobile context flags. The More regression uses actual emulated taps. The loopback read-only upstream is isolated from hosted data; fixtures are never runtime application defaults. The normal E2E configuration excludes these tests and retains its own auth/security assertions.
+
+The layout audit uses `checkVisibility()` as well as geometry so hidden descendants of closed native disclosures are not misclassified as obscured controls. Visible controls retain the same target-size, clipping and overflow checks. The shared header wraps under enlarged text; Settings is also checked at 200% root text. This is browser emulation, not physical-device or OS keyboard proof.

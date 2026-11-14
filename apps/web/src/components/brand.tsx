@@ -1,7 +1,7 @@
 import Link from 'next/link';
-export function Brand() {
+export function Brand({ href = '/' }: { href?: string }) {
   return (
-    <Link href="/" className="brand" aria-label="KindaMoving home">
+    <Link href={href} className="brand" aria-label="KindaMoving home">
       <svg viewBox="0 0 48 48" aria-hidden="true">
         <rect width="48" height="48" rx="10" fill="#d4ff3a" />
         <path

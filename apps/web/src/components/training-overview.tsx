@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { Button, Card, ErrorState, Skeleton } from '@km/ui';
+import { Button, ErrorState, Skeleton } from '@km/ui';
 import { api, keys, trainingQuery } from '@/lib/queries';
 import { duration } from '@/lib/metrics';
 import type { Change } from '@/lib/training/reconcile';
@@ -53,22 +53,30 @@ export function TrainingOverview({ userId }: { userId: string }) {
   const title = (id: string) => q.data.workouts.find((w) => w.id === id);
   const z = q.data.paces.zones;
   return (
-    <div className="grid two">
-      <Card>
+    <div className="stack training-overview">
+      <section>
         <h2>This week</h2>
         <p className="metric">
           {week.filter((w) => w.status === 'completed').length}/
           {week.filter((w) => w.kind !== 'rest').length} done
         </p>
-        <p className="muted">
-          {week.filter((w) => w.compliance?.grade === 'partial').length} partial
-          ·{' '}
-          {
-            week.filter((w) => w.status === 'missed' || w.status === 'skipped')
-              .length
-          }{' '}
-          missed or skipped
-        </p>
+        {week.some(
+          (w) =>
+            w.compliance?.grade === 'partial' ||
+            w.status === 'missed' ||
+            w.status === 'skipped',
+        ) && (
+          <p className="muted">
+            {week.filter((w) => w.compliance?.grade === 'partial').length}{' '}
+            partial ·{' '}
+            {
+              week.filter(
+                (w) => w.status === 'missed' || w.status === 'skipped',
+              ).length
+            }{' '}
+            missed or skipped
+          </p>
+        )}
         {proposals.length > 0 && (
           <div className="stack">
             <h3>Suggested changes</h3>
@@ -102,32 +110,38 @@ export function TrainingOverview({ userId }: { userId: string }) {
         <Button asChild variant="outline">
           <Link href="/app/training/plan">Build a race plan</Link>
         </Button>
-      </Card>
-      <Card>
-        <h2>Your paces</h2>
-        <p className="muted">
-          From {q.data.paces.basis}. Estimates, not prescriptions.
-        </p>
-        <ul>
-          <li>
-            Easy {duration(z.easy[0])}–{duration(z.easy[1])} /km
-          </li>
-          <li>
-            Marathon {duration(z.marathon[0])}–{duration(z.marathon[1])} /km
-          </li>
-          <li>
-            Threshold {duration(z.threshold[0])}–{duration(z.threshold[1])} /km
-          </li>
-          <li>
-            Interval {duration(z.interval[0])}–{duration(z.interval[1])} /km
-          </li>
-        </ul>
-        <p className="muted">
-          Equivalent times: 5 km {duration(q.data.paces.predictions['5k'])} · 10
-          km {duration(q.data.paces.predictions['10k'])} · half{' '}
-          {duration(q.data.paces.predictions.half)}
-        </p>
-      </Card>
+      </section>
+      <details className="disclosure">
+        <summary>
+          Your training paces{' '}
+          <span className="muted disclosure-note">Estimates</span>
+        </summary>
+        <div>
+          <p className="muted">
+            From {q.data.paces.basis}. Estimates, not prescriptions.
+          </p>
+          <ul>
+            <li>
+              Easy {duration(z.easy[0])}–{duration(z.easy[1])} /km
+            </li>
+            <li>
+              Marathon {duration(z.marathon[0])}–{duration(z.marathon[1])} /km
+            </li>
+            <li>
+              Threshold {duration(z.threshold[0])}–{duration(z.threshold[1])}{' '}
+              /km
+            </li>
+            <li>
+              Interval {duration(z.interval[0])}–{duration(z.interval[1])} /km
+            </li>
+          </ul>
+          <p className="muted">
+            Equivalent times: 5 km {duration(q.data.paces.predictions['5k'])} ·
+            10 km {duration(q.data.paces.predictions['10k'])} · half{' '}
+            {duration(q.data.paces.predictions.half)}
+          </p>
+        </div>
+      </details>
     </div>
   );
 }

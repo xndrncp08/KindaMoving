@@ -154,19 +154,24 @@ export function Shell({
       {label}
     </Link>
   );
-  const nav = (
+  const nav = (secondary = false) => (
     <nav aria-label="App navigation" className="nav-groups">
-      {groups.map(([label, items]) => (
-        <div
-          className="nav-group"
-          key={label ?? 'home'}
-          role="group"
-          aria-label={label ?? undefined}
-        >
-          {label && <p className="nav-group-label">{label}</p>}
-          {items.map(link)}
-        </div>
-      ))}
+      {groups.map(([label, items]) => {
+        const destinations = secondary
+          ? items.filter(([href]) => !tabs.some(([tab]) => tab === href))
+          : items;
+        return destinations.length > 0 ? (
+          <div
+            className="nav-group"
+            key={label ?? 'home'}
+            role="group"
+            aria-label={label ?? undefined}
+          >
+            {label && <p className="nav-group-label">{label}</p>}
+            {destinations.map(link)}
+          </div>
+        ) : null;
+      })}
       <div className="nav-group">
         {link(['/app/settings', 'Settings', Settings])}
       </div>
@@ -175,17 +180,21 @@ export function Shell({
   const toggleTheme = () =>
     setTheme(resolvedTheme === 'dark' ? 'light' : 'dark');
   const moreActive = !tabs.some(([href]) => active(path, href));
+  const revealImport = () => {
+    const disclosure = document.getElementById('import');
+    if (disclosure instanceof HTMLDetailsElement) disclosure.open = true;
+  };
   return (
     <div className="shell">
       <aside className="sidebar">
-        <Brand />
-        <Button asChild>
-          <Link href="/app/activities#import">
+        <Brand href="/app" />
+        <Button asChild variant="outline">
+          <Link href="/app/activities#import" onNavigate={revealImport}>
             <Upload size={16} aria-hidden="true" />
             Import Run
           </Link>
         </Button>
-        {nav}
+        {nav()}
         <div className="sidebar-bottom">
           <Button variant="ghost" onClick={toggleTheme}>
             <SunMoon size={16} aria-hidden="true" />
@@ -200,9 +209,9 @@ export function Shell({
       <div>
         <OfflineSync userId={userId} />
         <header className="mobile-header">
-          <Brand />
+          <Brand href="/app" />
           <Button asChild variant="outline">
-            <Link href="/app/activities#import">
+            <Link href="/app/activities#import" onNavigate={revealImport}>
               <Upload size={16} aria-hidden="true" />
               Import
             </Link>
@@ -238,13 +247,13 @@ export function Shell({
         </button>
       </nav>
       <Dialog
-        title="Everything else"
-        description="Review, plan and equip, grouped the same way as on desktop."
+        title="More"
+        description="Running tools and account settings."
         open={menu}
         onOpenChange={dismissMenu}
         sheet
       >
-        {nav}
+        {nav(true)}
         <div className="row">
           <Button variant="outline" onClick={toggleTheme}>
             <SunMoon size={16} aria-hidden="true" />

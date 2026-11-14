@@ -132,23 +132,30 @@ export function FormAnalysis({ userId }: { userId: string }) {
     (a) => compare.includes(a.id) && a.result?.usable,
   );
   return (
-    <div className="stack">
+    <div className="stack form-analysis">
       <Card>
         <h2>Analyse a short clip</h2>
-        <ul className="muted">
-          <li>
-            Film from the side, camera at hip height and level, 3–5 m away, the
-            whole body in frame.
-          </li>
-          <li>
-            10–20 seconds of steady running (a treadmill works well). 30 fps
-            minimum; 60 fps or more is better.
-          </li>
-          <li>
-            Your original video is deleted as soon as analysis finishes. The
-            annotated copy has faces blurred and is deleted after 7 days.
-          </li>
-        </ul>
+        <p className="muted">
+          Film 10–20 seconds from the side at hip height, with your whole body
+          visible.
+        </p>
+        <details>
+          <summary>Filming & privacy</summary>
+          <ul className="muted">
+            <li>
+              Film from the side, camera at hip height and level, 3–5 m away,
+              the whole body in frame.
+            </li>
+            <li>
+              10–20 seconds of steady running (a treadmill works well). 30 fps
+              minimum; 60 fps or more is better.
+            </li>
+            <li>
+              Your original video is deleted as soon as analysis finishes. The
+              annotated copy has faces blurred and is deleted after 7 days.
+            </li>
+          </ul>
+        </details>
         <div className="row">
           <label>
             Label
@@ -156,7 +163,9 @@ export function FormAnalysis({ userId }: { userId: string }) {
               value={label}
               maxLength={120}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="e.g. Treadmill, easy pace"
+              placeholder="e.g. Treadmill, easy pace…"
+              name="clip-label"
+              autoComplete="off"
             />
           </label>
           <label>
@@ -175,6 +184,13 @@ export function FormAnalysis({ userId }: { userId: string }) {
         {upload.error && <ErrorState message={upload.error.message} />}
       </Card>
       {list.isPending && <Skeleton />}
+      {list.error && (
+        <ErrorState
+          message={list.error.message}
+          retry={() => void list.refetch()}
+        />
+      )}
+      {remove.error && <ErrorState message={remove.error.message} />}
       {pair.length === 2 && (
         <Card>
           <h2>Side by side</h2>
@@ -212,42 +228,49 @@ export function FormAnalysis({ userId }: { userId: string }) {
       )}
       {list.data?.map((a) => (
         <Card key={a.id}>
-          <p className="eyebrow">
-            {a.label || 'Untitled'} · {new Date(a.created_at).toLocaleString()}{' '}
-            · {a.status}
+          <h2>{a.label || 'Untitled clip'}</h2>
+          <p className="muted">
+            {new Date(a.created_at).toLocaleString()} · {a.status}
           </p>
           {a.status === 'failed' && (
             <ErrorState message={a.error ?? 'Analysis failed.'} />
           )}
           {a.result && (
             <>
-              <p className="muted">
-                {a.result.quality.duration_s}s at {a.result.quality.fps} fps,{' '}
-                {a.result.quality.resolution.join('×')} · view:{' '}
-                {a.result.quality.view.replace(/_/g, ' ')} · runner detected in{' '}
-                {Math.round(a.result.quality.detection_rate * 100)}% of frames
-              </p>
+              {a.annotated_path && <Video id={a.id} />}
+              <details>
+                <summary>Recording quality</summary>
+                <p className="muted">
+                  {a.result.quality.duration_s}s at {a.result.quality.fps} fps,{' '}
+                  {a.result.quality.resolution.join('×')} · view:{' '}
+                  {a.result.quality.view.replace(/_/g, ' ')} · runner detected
+                  in {Math.round(a.result.quality.detection_rate * 100)}% of
+                  frames
+                </p>
+              </details>
               {a.result.warnings.map((w) => (
                 <p key={w} className="notice">
                   {w}
                 </p>
               ))}
-              {a.result.usable ? (
+              {a.result.usable &&
+              Object.values(a.result.metrics).some((value) => value != null) ? (
                 <DataTable
                   headers={['Measure', 'Median (10th–90th percentile)']}
                 >
-                  {ROWS.map(([k, name, unit]) => (
-                    <tr key={k}>
-                      <td>{name}</td>
-                      <td>{cell(a, k, unit)}</td>
-                    </tr>
-                  ))}
+                  {ROWS.filter(([key]) => a.result?.metrics[key] != null).map(
+                    ([k, name, unit]) => (
+                      <tr key={k}>
+                        <td>{name}</td>
+                        <td>{cell(a, k, unit)}</td>
+                      </tr>
+                    ),
+                  )}
                 </DataTable>
               ) : (
                 <p>Not enough reliable pose data to report measurements.</p>
               )}
               <p className="muted">{a.result.disclaimer}</p>
-              {a.annotated_path && <Video id={a.id} />}
             </>
           )}
           <div className="row">

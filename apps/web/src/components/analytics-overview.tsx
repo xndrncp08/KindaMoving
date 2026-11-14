@@ -2,7 +2,7 @@
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { Card, ErrorState, Skeleton, EmptyState, Provenance } from '@km/ui';
+import { ErrorState, Skeleton, EmptyState, Provenance } from '@km/ui';
 import { overviewQuery, profileQuery } from '@/lib/queries';
 import { day, distance, duration, span } from '@/lib/metrics';
 const Weekly = dynamic(() => import('./weekly-chart'), {
@@ -34,7 +34,7 @@ export function AnalyticsOverview({ userId }: { userId: string }) {
         <div className="instrument-cell">
           <dt>
             <span className="eyebrow">Time on feet · 7 days</span>
-            <Provenance kind="measured" />
+            <span className="sr-only">Measured</span>
           </dt>
           <dd className="metric num">{span(o.load.last7_s)}</dd>
           <dd className="muted">
@@ -44,7 +44,7 @@ export function AnalyticsOverview({ userId }: { userId: string }) {
         <div className="instrument-cell">
           <dt>
             <span className="eyebrow">Load trend</span>
-            <Provenance kind="measured" />
+            <span className="sr-only">Measured</span>
           </dt>
           <dd className="metric num">
             {o.load.ratio === null ? '—' : o.load.ratio.toFixed(2) + '×'}
@@ -57,7 +57,7 @@ export function AnalyticsOverview({ userId }: { userId: string }) {
         <div className="instrument-cell">
           <dt>
             <span className="eyebrow">Consistency</span>
-            <Provenance kind="measured" />
+            <span className="sr-only">Measured</span>
           </dt>
           <dd className="metric num">
             {o.consistency.active_weeks}/{o.consistency.of_weeks} weeks
@@ -81,7 +81,7 @@ export function AnalyticsOverview({ userId }: { userId: string }) {
           </dd>
         </div>
       </dl>
-      <Card>
+      <section className="stack">
         <div className="row between">
           <h2>Weekly volume</h2>
           <p className="legend">
@@ -97,8 +97,8 @@ export function AnalyticsOverview({ userId }: { userId: string }) {
           </p>
         </div>
         <Weekly weekly={o.weekly} units={units} />
-      </Card>
-      <Card>
+      </section>
+      <section className="stack">
         <h2>Personal bests</h2>
         {o.personal_bests.length === 0 ? (
           <EmptyState title="No recorded efforts yet">
@@ -129,7 +129,7 @@ export function AnalyticsOverview({ userId }: { userId: string }) {
           {distance(1000, units).endsWith('km') ? 'kilometres' : 'miles'} for
           display only.
         </p>
-      </Card>
+      </section>
     </div>
   );
 }

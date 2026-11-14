@@ -113,7 +113,7 @@ test('planner sheet URL restores its stop through reload and orientation changes
 test('failed uploads retain the file and permit a successful retry without a hosted mutation', async ({
   page,
 }) => {
-  await page.goto('/app/activities');
+  await page.goto('/app/activities#import');
   let attempts = 0;
   await page.route('**/api/uploads', (route) => {
     attempts++;

@@ -16,8 +16,8 @@ There are no _Tracks_ or _Community_ destinations: those features do not exist, 
 
 ## One mental model, two layouts
 
-- **Desktop (>720px)**: a 248px left rail with the groups above, a persistent **Import Run** primary action, and theme/log-out at the foot. The active item gets a surface fill and a 3px accent-strong bar.
-- **Mobile (≤720px)**: a sticky header (brand + Import) and a bottom **tab bar** with the four most frequent destinations (Home, Runs, Routes, Training) plus **More**. More opens a bottom sheet containing the _same grouped list_ as the desktop rail, so nothing moves between groups. More shows as current when the active page lives inside it. The tab bar respects `env(safe-area-inset-bottom)`; toasts sit above it.
+- **Desktop (>720px)**: a 248px left rail with the groups above, a persistent **Import Run** outline action, and theme/log-out at the foot. The active item gets a surface fill and a 3px accent-strong bar.
+- **Mobile (≤720px)**: a sticky header (brand + Import) and a bottom **tab bar** with the four most frequent destinations (Home, Runs, Routes, Training) plus **More**. More opens a bottom sheet containing secondary tools in the same groups as the desktop rail. Home, Runs, Routes and Training stay in the tab bar instead of being duplicated. More shows as current when the active page lives inside it. The tab bar respects `env(safe-area-inset-bottom)`; toasts sit above it.
 
 ## Interaction rules
 
@@ -26,5 +26,5 @@ There are no _Tracks_ or _Community_ destinations: those features do not exist, 
 - Destructive actions confirm in an in-app dialog (`ConfirmButton` or the record delete dialog): deleting records, condition reports and form analyses, and disconnecting COROS. Account deletion additionally requires typing DELETE. Synchronous navigation guards (leaving a dirty form) still use the browser's native prompt, because they must block navigation.
 - Unsaved work warns before leaving: route candidates that have not been saved trigger `beforeunload`.
 - Gestures always have alternatives: map click to set a start point has **My Location** and **Map Centre** (pan with arrow keys, then press it); undo/redo are buttons as well as Cmd/Ctrl+Z / Shift+Cmd/Ctrl+Z (ignored while typing in a field).
-- Loading copy ends with an ellipsis ("Searching the Network…"); async results announce through `aria-live="polite"` regions.
+- Loading copy ends with an ellipsis ("Finding routes…"); async results announce through `aria-live="polite"` regions.
 - External workout or route pushes (COROS) always require an explicit confirmation step; imports are read-only.

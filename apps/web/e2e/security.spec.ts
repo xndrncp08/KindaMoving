@@ -15,7 +15,10 @@ test('nonce CSP permits hydration/theme and blocks untrusted scripts', async ({
     .first()
     .evaluate((el) => (el as HTMLScriptElement).nonce);
   expect(nonce.length).toBeGreaterThan(10);
-  await page.getByRole('link', { name: 'Start your running story' }).click();
+  await page
+    .locator('.hero')
+    .getByRole('link', { name: 'Create an account' })
+    .click();
   await expect(
     page.getByRole('heading', { name: 'Find your stride.' }),
   ).toBeVisible();

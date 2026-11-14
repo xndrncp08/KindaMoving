@@ -19,7 +19,10 @@ test('marketing is responsive, honest and links to signup', async ({
       '../../output/playwright/landing-' + test.info().project.name + '.png',
     fullPage: true,
   });
-  await page.getByRole('link', { name: 'Start your running story' }).click();
+  await page
+    .locator('.hero')
+    .getByRole('link', { name: 'Create an account' })
+    .click();
   await expect(
     page.getByRole('heading', { name: 'Find your stride.' }),
   ).toBeVisible();

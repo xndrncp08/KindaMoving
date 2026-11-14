@@ -27,3 +27,7 @@
 6. Forms: labels, `autocomplete`, correct `type`/`inputMode`, worded inline errors, submit stays enabled until the request starts.
 7. Maps: the selected route is identifiable without colour (casing, legend, text metrics); panels don't cover fitted geometry.
 8. Run the `web-design-guidelines` skill on changed files and resolve findings.
+
+## Refinement verification
+
+The synthetic UI suite runs axe against WCAG 2 A/AA, 2.1 AA and 2.2 AA tags in both themes, plus the existing 14-viewport geometry audit. Interaction tests cover restoring focus after More/confirmation closure, Back, keyboard chart tracing, section anchors, sheet stops, retained file/form state, errors and enlarged text. Shoe-history links have explicit 44px hit areas; native disclosures keep keyboard semantics. Automated results support the tested states only; they are not a full screen-reader or WCAG conformance certification.

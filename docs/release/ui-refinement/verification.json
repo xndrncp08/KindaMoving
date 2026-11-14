@@ -1,0 +1,24 @@
+{
+  "environment": "Local production Chromium with read-only synthetic APIs and empty map style",
+  "screens": 19,
+  "themes": ["light", "dark"],
+  "viewports": 14,
+  "cases": 532,
+  "layout_findings": 0,
+  "console_or_page_errors": 0,
+  "axe_violations": 0,
+  "axe_cases": 76,
+  "interaction_and_state_tests": 16,
+  "production_ui_passed": 548,
+  "development_ui_passed": 548,
+  "unit_passed": 175,
+  "unit_skipped": 2,
+  "existing_production_e2e_passed": 52,
+  "existing_production_e2e_skipped": 402,
+  "postgis_contracts": "passed isolated disposable cluster",
+  "limitations": [
+    "No hosted account or COROS acceptance",
+    "No real-basemap or network-route accuracy proof",
+    "No physical devices or screen reader certification"
+  ]
+}

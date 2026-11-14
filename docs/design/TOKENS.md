@@ -54,3 +54,7 @@ Ink on Volt: 15.4:1. All text pairs meet AA (4.5:1) on the surfaces where they a
 ## Motion
 
 `--dur-1` 120ms (hover, press) · `--dur-2` 200ms (dialogs, fades) · `--dur-3` 320ms (sheets, meters). Easing `--ease-out` cubic-bezier(.2,.8,.2,1). Only `transform`, `opacity` and colours animate; transitions list their properties (never `all`). Press feedback is `scale(0.98)`. Under `prefers-reduced-motion: reduce`, durations collapse to ~0 and iteration counts to one.
+
+## Refinement usage
+
+No new palette, spacing, radius or motion tokens were added. Routine badges use `--surface-2` / `--ink-2`; provenance and supporting metric labels use Archivo at the existing small sizes. Mono remains for technical axes, dates and occasional section labels. Shoe wear uses the theme-aware `--meter` token rather than `--accent-ink`, which is always charcoal.

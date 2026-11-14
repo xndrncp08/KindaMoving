@@ -54,7 +54,7 @@ export function check(error: unknown) {
   if (error)
     throw new ApiError(
       400,
-      'Database rejected this change. Check linked records and try again.',
+      'The database couldn’t complete this request. Linked records may have changed.',
     );
 }
 const activityBase =

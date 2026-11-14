@@ -151,12 +151,23 @@ export function Dialog({
   /** Bottom sheet (mobile). */
   sheet?: boolean;
 }) {
+  const returnFocus = React.useRef<HTMLElement | null>(null);
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="overlay" />
         <DialogPrimitive.Content
           className={cn('dialog', drawer && 'drawer', sheet && 'sheet')}
+          onOpenAutoFocus={() => {
+            returnFocus.current = document.activeElement as HTMLElement;
+          }}
+          onCloseAutoFocus={(event) => {
+            // Programmatic dialogs have no Radix Trigger to restore focus to.
+            if (returnFocus.current?.isConnected) {
+              event.preventDefault();
+              returnFocus.current.focus();
+            }
+          }}
         >
           <DialogPrimitive.Title>{title}</DialogPrimitive.Title>
           <DialogPrimitive.Description className="muted">

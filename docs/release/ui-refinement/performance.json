@@ -1,0 +1,121 @@
+{
+  "scope": "Production Chromium, synthetic API and empty tile fixtures, 393x852, cold client cache, CPU 4x, 150 ms latency, 209715 B/s down, 86400 B/s up; three runs per screen. Long-task blocking is the excess over 50 ms during the observation window, not Lighthouse TBT or field INP.",
+  "results": {
+    "before": {
+      "home": {
+        "median": {
+          "lcp_ms": 2628,
+          "cls": 0.047604847172888286,
+          "long_task_blocking_ms": 7,
+          "transfer_bytes": 439615
+        },
+        "trials": [
+          {
+            "lcp_ms": 2616,
+            "cls": 0.047604847172888286,
+            "long_task_blocking_ms": 7,
+            "transfer_bytes": 439620
+          },
+          {
+            "lcp_ms": 2628,
+            "cls": 0.047604847172888286,
+            "long_task_blocking_ms": 6,
+            "transfer_bytes": 439615
+          },
+          {
+            "lcp_ms": 2636,
+            "cls": 0.047604847172888286,
+            "long_task_blocking_ms": 7,
+            "transfer_bytes": 439611
+          }
+        ]
+      },
+      "analyze": {
+        "median": {
+          "lcp_ms": 772,
+          "cls": 0.06837058809573066,
+          "long_task_blocking_ms": 6,
+          "transfer_bytes": 538879
+        },
+        "trials": [
+          {
+            "lcp_ms": 772,
+            "cls": 0.06837058809573066,
+            "long_task_blocking_ms": 6,
+            "transfer_bytes": 538879
+          },
+          {
+            "lcp_ms": 764,
+            "cls": 0.06837058809573066,
+            "long_task_blocking_ms": 6,
+            "transfer_bytes": 538878
+          },
+          {
+            "lcp_ms": 780,
+            "cls": 0.06837058809573066,
+            "long_task_blocking_ms": 8,
+            "transfer_bytes": 538886
+          }
+        ]
+      }
+    },
+    "after": {
+      "home": {
+        "median": {
+          "lcp_ms": 2620,
+          "cls": 0.05441534965305978,
+          "long_task_blocking_ms": 6,
+          "transfer_bytes": 438090
+        },
+        "trials": [
+          {
+            "lcp_ms": 2632,
+            "cls": 0.05441534965305978,
+            "long_task_blocking_ms": 6,
+            "transfer_bytes": 438084
+          },
+          {
+            "lcp_ms": 2616,
+            "cls": 0.05441534965305978,
+            "long_task_blocking_ms": 7,
+            "transfer_bytes": 438090
+          },
+          {
+            "lcp_ms": 2620,
+            "cls": 0.05441534965305978,
+            "long_task_blocking_ms": 6,
+            "transfer_bytes": 438090
+          }
+        ]
+      },
+      "analyze": {
+        "median": {
+          "lcp_ms": 760,
+          "cls": 0.03123496358083254,
+          "long_task_blocking_ms": 9,
+          "transfer_bytes": 537409
+        },
+        "trials": [
+          {
+            "lcp_ms": 760,
+            "cls": 0.03123496358083254,
+            "long_task_blocking_ms": 9,
+            "transfer_bytes": 537409
+          },
+          {
+            "lcp_ms": 772,
+            "cls": 0.03123496358083254,
+            "long_task_blocking_ms": 6,
+            "transfer_bytes": 537409
+          },
+          {
+            "lcp_ms": 760,
+            "cls": 0.03123496358083254,
+            "long_task_blocking_ms": 9,
+            "transfer_bytes": 537405
+          }
+        ]
+      }
+    }
+  }
+}

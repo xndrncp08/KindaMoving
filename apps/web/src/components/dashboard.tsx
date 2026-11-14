@@ -87,7 +87,7 @@ export function Dashboard({
   if (error)
     return (
       <ErrorState
-        message={`${error.message} Check your connection, then try again.`}
+        message={`Your week couldn’t load. ${error.message}`}
         retry={() => {
           void summary.refetch();
           void activities.refetch();

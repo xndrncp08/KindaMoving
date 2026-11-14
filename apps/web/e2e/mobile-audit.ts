@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import type { Page } from '@playwright/test';
 
 /** The viewport matrix from docs/design/MOBILE.md (portrait phones first). */
@@ -139,5 +141,46 @@ export async function audit(page: Page): Promise<Finding[]> {
       kind: 'overflow' | 'clipped' | 'small-target' | 'obscured';
       detail: string;
     }[];
+  });
+}
+
+const axeSource = readFileSync(
+  createRequire(import.meta.url).resolve('axe-core/axe.min.js'),
+  'utf8',
+);
+/** WCAG 2.0–2.2 A/AA violations from axe-core, reduced to what a reviewer needs. */
+export async function axeViolations(page: Page) {
+  await page.evaluate(axeSource);
+  return page.evaluate(async () => {
+    const axe = (
+      window as unknown as {
+        axe: {
+          run: (
+            root: Document,
+            options: unknown,
+          ) => Promise<{
+            violations: {
+              id: string;
+              impact: string;
+              nodes: { target: string[]; failureSummary: string }[];
+            }[];
+          }>;
+        };
+      }
+    ).axe;
+    const results = await axe.run(document, {
+      runOnly: {
+        type: 'tag',
+        values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'],
+      },
+    });
+    return results.violations.map(({ id, impact, nodes }) => ({
+      id,
+      impact,
+      nodes: nodes.map(({ target, failureSummary }) => ({
+        target,
+        failureSummary,
+      })),
+    }));
   });
 }

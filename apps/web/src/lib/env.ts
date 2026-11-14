@@ -12,10 +12,10 @@ export function credentials() {
     key: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
   };
 }
+/** Same-origin path only. Parsing (not prefix checks) catches `/\t/evil.com`, which URL parsing turns into `//evil.com`. */
 export function safeNext(value: string | null) {
-  return value?.startsWith('/') &&
-    !value.startsWith('//') &&
-    !value.includes('\\')
-    ? value
-    : '/app';
+  if (!value?.startsWith('/')) return '/app';
+  const base = 'https://km.invalid';
+  const url = new URL(value, base);
+  return url.origin === base ? url.pathname + url.search + url.hash : '/app';
 }

@@ -1,5 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { createRequire } from 'node:module';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { test, expect } from './fixtures/ui-test';
 import {
   activities,
@@ -8,11 +7,10 @@ import {
   shoeId,
   workoutId,
 } from './fixtures/ui-data';
-import { VIEWPORTS, audit } from './mobile-audit';
+import { VIEWPORTS, audit, axeViolations } from './mobile-audit';
 
 const screens = {
   landing: '/',
-  login: '/login',
   onboarding: '/onboarding',
   home: '/app',
   runs: '/app/activities',
@@ -32,10 +30,6 @@ const screens = {
   settings: '/app/settings',
 };
 const phase = process.env.KM_UI_PHASE ?? 'after';
-const axeSource = readFileSync(
-  createRequire(import.meta.url).resolve('axe-core/axe.min.js'),
-  'utf8',
-);
 const only = process.env.KM_PAGES?.split(',');
 const matrix =
   process.env.KM_UI_MATRIX === '1'
@@ -86,41 +80,7 @@ for (const theme of ['light', 'dark'] as const)
           const findings = await audit(page);
           const accessibility = [];
           if (vp === 'modern-iphone' || vp === 'desktop') {
-            await page.evaluate(axeSource);
-            accessibility.push(
-              ...(await page.evaluate(async () => {
-                const axe = (
-                  window as unknown as {
-                    axe: {
-                      run: (
-                        root: Document,
-                        options: unknown,
-                      ) => Promise<{
-                        violations: {
-                          id: string;
-                          impact: string;
-                          nodes: { target: string[]; failureSummary: string }[];
-                        }[];
-                      }>;
-                    };
-                  }
-                ).axe;
-                const results = await axe.run(document, {
-                  runOnly: {
-                    type: 'tag',
-                    values: ['wcag2a', 'wcag2aa', 'wcag21aa', 'wcag22aa'],
-                  },
-                });
-                return results.violations.map(({ id, impact, nodes }) => ({
-                  id,
-                  impact,
-                  nodes: nodes.map(({ target, failureSummary }) => ({
-                    target,
-                    failureSummary,
-                  })),
-                }));
-              })),
-            );
+            accessibility.push(...(await axeViolations(page)));
           }
           writeFileSync(
             `${dir}/${name}-${theme}-${vp}.json`,

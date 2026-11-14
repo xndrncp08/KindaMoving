@@ -1,17 +1,21 @@
 import { requireUser } from '@/lib/session';
 import { ProfileForm } from '@/components/profile-form';
-import { Brand } from '@/components/brand';
+import { AuthShell } from '@/components/auth-shell';
+export const metadata = {
+  title: 'Set up',
+  robots: { index: false, follow: false },
+};
 export default async function Page() {
   const { user } = await requireUser();
   return (
-    <main id="main" className="legal stack">
-      <Brand />
-      <p className="eyebrow">First, the easy questions.</p>
-      <h1>Run your own way.</h1>
-      <p className="muted">
-        Tell us a little about your running. You can change all of this later.
-      </p>
+    <AuthShell>
+      <header className="auth-head">
+        <h1>Run your own way.</h1>
+        <p className="muted">
+          A few answers set up your week. Change any of them later in Settings.
+        </p>
+      </header>
       <ProfileForm userId={user.id} onboarding />
-    </main>
+    </AuthShell>
   );
 }

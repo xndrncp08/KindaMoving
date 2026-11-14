@@ -3,7 +3,12 @@ import type { Page } from '@playwright/test';
 import { test, expect } from './fixtures/ui-test';
 import { coordinates, runId } from './fixtures/ui-data';
 
-test.use({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+test.use({
+  viewport: { width: 390, height: 844 },
+  reducedMotion: 'reduce',
+  hasTouch: true,
+  isMobile: true,
+});
 const shots = '../../output/playwright/ui-refinement/states';
 test.beforeEach(() => mkdirSync(shots, { recursive: true }));
 async function capture(page: Page, name: string) {

@@ -36,3 +36,11 @@
 - **Settings** (`.settings-section`, `.settings-subsection`): use section dividers rather than nested cards. Keep connected devices ahead of password/account management.
 - **Badges and provenance**: neutral statuses use Archivo and existing neutral surfaces. Volt is reserved for meaningful selection/progress or the primary action. Keep technical axes in Mono; ordinary metric labels use Archivo.
 - **Dialogs**: programmatic opening captures the initiating element and restores focus on close when it still exists. Radix still owns modal focus containment and Escape behavior.
+
+## Authentication patterns
+
+- **Auth shell** (`AuthShell`, `.auth`): one 440px column with the brand, content and legal links. At ≥960px a charcoal route panel (`RouteArt`, decorative and `aria-hidden`) joins it. Phones top-align content so the form does not jump when the keyboard resizes the viewport. Used by login, signup, reset request, `/auth/reset` and onboarding.
+- **Password field** (`PasswordField`): label wraps the input, and the 44px show/hide toggle sits outside the label so it never joins the input's accessible name. It uses `aria-pressed`.
+- **Field feedback**: `.field-error` (danger) or `.field-hint` (muted; `.met` turns it `--good` with a check) directly under the control, linked by `aria-describedby`. Validation runs when a field is left, then live while it is corrected.
+- **Inbox state**: after signup/reset, the form gives way to "Check your inbox" with the address, a disabled "Resend in Ns" button and a way back. Copy is conditional ("If … has an account") so it never confirms an account exists.
+- **Buttons**: auth screens use one full-width 48px Volt action; Google, if enabled, is an outline button below an "or" divider.

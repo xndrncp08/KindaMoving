@@ -114,4 +114,6 @@ Started from verified remote main `77d33c3`; unrelated local analytics-test chan
 - `7ca4c9e` — add synthetic screen, interaction, accessibility and viewport coverage.
 - `c1a9eaf` — make the condition-test name match its exact assertions.
 
-CI now runs the full synthetic matrix alongside existing checks and uploads UI screenshots/results on failure. Publication, CI run links and merge evidence are appended after remote verification.
+Published branch: `feat/ui-refinement`. Review and final-head check results: [pull request #1](https://github.com/xndrncp08/KindaMoving/pull/1), [PR checks](https://github.com/xndrncp08/KindaMoving/pull/1/checks). The initial remote verification is [Foundation checks 43542538464](https://github.com/xndrncp08/KindaMoving/actions/runs/43542538464); follow-up documentation commits also receive checks before merge. The PR records the merge commit and final check state without requiring a self-referential commit hash in this file.
+
+CI now runs the full synthetic matrix alongside existing web, analytics and disposable-database checks and uploads UI screenshots/results on failure. No test was disabled to obtain a pass. The only audit correction makes hidden native-disclosure contents use actual rendered visibility; the same checks remain active for visible controls.

@@ -1,5 +1,4 @@
 'use client';
-import Link from 'next/link';
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
@@ -20,7 +19,11 @@ export function ShoeStats({ s }: { s: GearShoe }) {
         role="meter"
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-valuenow={Math.round(s.wear_fraction * 100)}
+        aria-valuenow={Math.min(
+          100,
+          Math.max(0, Math.round(s.wear_fraction * 100)),
+        )}
+        aria-valuetext={`${Math.round(s.total_m / 1000)} of ${Math.round(s.target_m / 1000)} km`}
         aria-label={`${s.title} wear`}
         style={{ height: 8, borderRadius: 4, background: 'var(--line)' }}
       >
@@ -29,8 +32,7 @@ export function ShoeStats({ s }: { s: GearShoe }) {
             width: `${Math.min(100, s.wear_fraction * 100)}%`,
             height: '100%',
             borderRadius: 4,
-            background:
-              s.wear_fraction >= 1 ? 'var(--danger)' : 'var(--accent-ink)',
+            background: s.wear_fraction >= 1 ? 'var(--danger)' : 'var(--meter)',
           }}
         />
       </div>
@@ -150,32 +152,6 @@ export function GearOverview({ userId }: { userId: string }) {
           {assign.error && <ErrorState message={assign.error.message} />}
         </Card>
       )}
-      <div className="grid two">
-        {q.data.shoes.map((s) => (
-          <Card key={s.id}>
-            <p className="eyebrow">
-              {s.retired
-                ? `Retired${s.retired_on ? ' ' + s.retired_on : ''}`
-                : 'In rotation'}
-              {s.is_default && ' · default'}
-            </p>
-            <h2 style={{ fontSize: 22 }}>
-              <Link href={'/app/gear/' + s.id}>{s.title} ↗</Link>
-            </h2>
-            <ShoeStats s={s} />
-            {s.by_kind && (
-              <p className="muted">
-                {Object.entries(s.by_kind)
-                  .map(
-                    ([k, v]) =>
-                      `${k}: ${(v.m / 1000).toFixed(0)} km${v.pace_s_per_km ? ` @ ${duration(v.pace_s_per_km)}/km` : ''}`,
-                  )
-                  .join(' · ')}
-              </p>
-            )}
-          </Card>
-        ))}
-      </div>
     </div>
   );
 }
@@ -261,6 +237,7 @@ export function ShoeWear({
         </select>
         <input
           className="input"
+          aria-label="Wear note"
           placeholder="e.g. outsole worn at the heel"
           value={note}
           maxLength={500}

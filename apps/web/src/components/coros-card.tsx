@@ -102,7 +102,7 @@ export function CorosCard({ userId }: { userId: string }) {
           COROS ·{' '}
           {
             {
-              connected: 'Connected (verified)',
+              connected: 'Connected',
               disconnected: 'Not connected',
               error: 'Connection error',
               reauth_required: 'Reconnect required',
@@ -111,12 +111,17 @@ export function CorosCard({ userId }: { userId: string }) {
         </span>
       </p>
       <p className="muted">
-        Uses COROS&apos;s official MCP service with your explicit OAuth consent.
-        KindaMoving reads activity lists and original FIT files, and only writes
-        to COROS (routes, workouts) after you confirm each item. Live watch
-        tracking and watch control are not available through COROS&apos;s public
-        interfaces.
+        Import runs from your watch. Routes and workouts are sent only when you
+        confirm.
       </p>
+      <details>
+        <summary>Connection details</summary>
+        <p className="muted">
+          Connect through COROS’s official sign-in. KindaMoving reads your
+          activity list and FIT files through COROS’s MCP service. Live tracking
+          and watch control are unavailable.
+        </p>
+      </details>
       {s.last_error && <p role="alert">{s.last_error}</p>}
       {s.status === 'connected' ? (
         <>

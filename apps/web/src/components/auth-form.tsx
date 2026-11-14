@@ -90,7 +90,6 @@ export function AuthForm() {
   return (
     <main id="main" className="auth stack">
       <Brand />
-      <p className="eyebrow">Your next chapter starts here.</p>
       <h1>
         {mode === 'signup'
           ? 'Find your stride.'
@@ -105,7 +104,13 @@ export function AuthForm() {
           <form className="stack" onSubmit={handleSubmit(submit)}>
             <label>
               Email
-              <Input autoComplete="email" type="email" {...register('email')} />
+              <Input
+                autoComplete="email"
+                type="email"
+                spellCheck={false}
+                aria-invalid={!!errors.email}
+                {...register('email')}
+              />
               {errors.email && (
                 <span className="field-error">{errors.email.message}</span>
               )}
@@ -115,12 +120,15 @@ export function AuthForm() {
                 Password
                 <Input
                   type="password"
+                  aria-invalid={!!errors.password}
                   autoComplete={
                     mode === 'signup' ? 'new-password' : 'current-password'
                   }
                   {...register('password')}
                 />
-                <span className="muted">At least 12 characters.</span>
+                {mode === 'signup' && (
+                  <span className="muted">At least 12 characters.</span>
+                )}
                 {errors.password && (
                   <span className="field-error">{errors.password.message}</span>
                 )}

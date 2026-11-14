@@ -22,7 +22,9 @@ import {
   keys,
   useRecordMutation,
   summaryQuery,
+  gearQuery,
 } from '@/lib/queries';
+import { ShoeStats } from './gear-overview';
 import { day, distance, duration, pace } from '@/lib/metrics';
 import { RecordForm } from './record-form';
 import { useComparison, usePreferences, useInteraction } from '@/lib/stores';
@@ -82,6 +84,7 @@ export function ResourcePage({
 }) {
   const query = useQuery(recordsQuery(userId, name));
   const summary = useQuery(summaryQuery(userId));
+  const gear = useQuery({ ...gearQuery(userId), enabled: name === 'shoes' });
   const shoes = useQuery(recordsQuery(userId, 'shoes'));
   const activities = useQuery(recordsQuery(userId, 'activities'));
   const profile = useQuery(profileQuery(userId));
@@ -128,6 +131,43 @@ export function ResourcePage({
       (status !== 'retired' || r.retired) &&
       (status !== 'active' || !r.retired),
   );
+  const List = name === 'workouts' ? 'details' : 'section';
+  const filters = (
+    <div className="row filters">
+      <label className="search">
+        Search {title.toLowerCase()}
+        <Input
+          type="search"
+          name="q"
+          autoComplete="off"
+          value={term}
+          onChange={(e) => filter('q', e.target.value)}
+          placeholder={
+            name === 'activities' ? 'e.g. Running · Oct 23…' : 'Search by name…'
+          }
+        />
+      </label>
+      {name !== 'activities' && (
+        <label>
+          Show
+          <select
+            value={status}
+            onChange={(e) => filter('status', e.target.value)}
+          >
+            <option value="all">All</option>
+            {(name === 'routes'
+              ? ['saved']
+              : name === 'shoes'
+                ? ['active', 'retired']
+                : ['planned', 'completed']
+            ).map((v) => (
+              <option key={v}>{v}</option>
+            ))}
+          </select>
+        </label>
+      )}
+    </div>
+  );
   return (
     <div className="stack">
       <header className="page-head row between">
@@ -138,11 +178,14 @@ export function ResourcePage({
         </div>
         <div className="row">
           {name === 'routes' && (
-            <Button asChild variant="outline">
+            <Button asChild>
               <Link href="/app/routes/plan">Plan a route</Link>
             </Button>
           )}
           <Button
+            variant={
+              name === 'routes' || name === 'activities' ? 'outline' : 'default'
+            }
             onClick={() => {
               setEditing(null);
               open('record');
@@ -155,42 +198,14 @@ export function ResourcePage({
       </header>
       {intro}
       {name === 'activities' && <UploadForm userId={userId} />}
-      <div className="row filters">
-        <label className="search">
-          Search {title.toLowerCase()}
-          <Input
-            type="search"
-            name="q"
-            autoComplete="off"
-            value={term}
-            onChange={(e) => filter('q', e.target.value)}
-            placeholder={
-              name === 'activities'
-                ? 'e.g. Running · Oct 23…'
-                : 'Search by name…'
-            }
-          />
-        </label>
-        {name !== 'activities' && (
-          <label>
-            Show
-            <select
-              value={status}
-              onChange={(e) => filter('status', e.target.value)}
-            >
-              <option value="all">All</option>
-              {(name === 'routes'
-                ? ['saved']
-                : name === 'shoes'
-                  ? ['active', 'retired']
-                  : ['planned', 'completed']
-              ).map((v) => (
-                <option key={v}>{v}</option>
-              ))}
-            </select>
-          </label>
-        )}
-      </div>
+      {name === 'workouts' ? (
+        <details className="disclosure">
+          <summary>Filter workouts</summary>
+          {filters}
+        </details>
+      ) : (
+        filters
+      )}
       {query.isPending ? (
         <Skeleton />
       ) : query.error ? (
@@ -251,9 +266,19 @@ export function ResourcePage({
           )}
           {records.length === 0 ? (
             <EmptyState
-              title={term ? 'Nothing matches.' : 'Your next chapter is blank.'}
+              title={
+                term || status !== 'all'
+                  ? 'No matches'
+                  : `No ${title.toLowerCase()} yet`
+              }
             >
-              Add your first {singular}. No heroic effort required.
+              {term || status !== 'all'
+                ? 'Try another search or change the filter.'
+                : name === 'activities'
+                  ? 'Import a GPX or FIT file, connect COROS in Settings, or log your first run.'
+                  : name === 'routes'
+                    ? 'Plan a route to find a runnable loop near you, or add one by hand.'
+                    : `Add your first ${singular} to start keeping track.`}
             </EmptyState>
           ) : name === 'activities' ? (
             <div className="table-scroll">
@@ -352,101 +377,132 @@ export function ResourcePage({
               </table>
             </div>
           ) : (
-            <div className="grid two">
-              {records.map((r) => (
-                <Card key={String(r.id)}>
-                  <p className="eyebrow muted">
-                    {name === 'shoes'
-                      ? r.retired
-                        ? 'Retired'
-                        : 'In rotation'
-                      : name === 'workouts'
-                        ? r.completed
-                          ? 'Completed'
-                          : 'Planned'
-                        : 'Your route'}
-                  </p>
-                  <h2>
-                    <Link href={'/app/' + detailPath[name] + '/' + r.id}>
-                      {String(r.title)}
-                    </Link>
-                  </h2>
-                  {name === 'shoes' ? (
-                    <>
-                      <p>{String(r.brand)}</p>
-                      <p className="metric">
-                        {summary.data
-                          ? distance(
-                              summary.data.shoes[String(r.id)] || 0,
-                              profile.data?.units,
-                            )
-                          : '—'}
-                      </p>
-                    </>
-                  ) : name === 'routes' ? (
-                    <>
-                      <p>
-                        {distance(Number(r.distance_m), profile.data?.units)}
-                      </p>
-                      <p className="muted">{String(r.description)}</p>
-                    </>
-                  ) : (
-                    <>
-                      <p suppressHydrationWarning>
-                        {day(String(r.scheduled_on), {
-                          weekday: 'long',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </p>
-                      <p className="muted">{String(r.description)}</p>
-                    </>
-                  )}
-                  <div className="row">
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setEditing(r);
-                        open('record');
-                      }}
-                    >
-                      Edit
-                    </Button>
-                    {name === 'routes' && (
-                      <Button
-                        variant="ghost"
-                        disabled={save.isPending}
-                        onClick={() =>
-                          save.mutate(
-                            {
-                              id: String(r.id),
-                              remove: !!saved.data?.some(
-                                (s) => s.route_id === r.id,
-                              ),
-                            },
-                            { onError: (e) => toast.error(e.message) },
-                          )
-                        }
-                      >
-                        <Bookmark size={15} />
-                        {saved.data?.some((s) => s.route_id === r.id)
-                          ? 'Unsave'
-                          : 'Save route'}
-                      </Button>
+            <List className={name === 'workouts' ? 'disclosure' : undefined}>
+              {name === 'workouts' && (
+                <summary>All workouts ({records.length})</summary>
+              )}
+              <div className="grid two">
+                {records.map((r) => (
+                  <Card key={String(r.id)}>
+                    <p className="eyebrow muted">
+                      {name === 'shoes'
+                        ? r.retired
+                          ? 'Retired'
+                          : 'In rotation'
+                        : name === 'workouts'
+                          ? r.completed
+                            ? 'Completed'
+                            : 'Planned'
+                          : 'Your route'}
+                    </p>
+                    <h2>
+                      <Link href={'/app/' + detailPath[name] + '/' + r.id}>
+                        {String(r.title)}
+                      </Link>
+                    </h2>
+                    {name === 'shoes' ? (
+                      <>
+                        <p>{String(r.brand)}</p>
+                        {r.is_default === true && (
+                          <p className="muted">Default pair</p>
+                        )}
+                        <p className="metric">
+                          {summary.data
+                            ? distance(
+                                summary.data.shoes[String(r.id)] || 0,
+                                profile.data?.units,
+                              )
+                            : '—'}
+                        </p>
+                        {gear.data?.shoes.find((s) => s.id === r.id) && (
+                          <>
+                            <ShoeStats
+                              s={gear.data.shoes.find((s) => s.id === r.id)!}
+                            />
+                            {r.retired_on ? (
+                              <p className="muted">
+                                Retired {String(r.retired_on)}
+                              </p>
+                            ) : null}
+                          </>
+                        )}
+                        {gear.error && (
+                          <ErrorState
+                            message={gear.error.message}
+                            retry={() => void gear.refetch()}
+                          />
+                        )}
+                      </>
+                    ) : name === 'routes' ? (
+                      <>
+                        <p>
+                          {distance(Number(r.distance_m), profile.data?.units)}
+                        </p>
+                        <p className="muted">{String(r.description)}</p>
+                      </>
+                    ) : (
+                      <>
+                        <p suppressHydrationWarning>
+                          {day(String(r.scheduled_on), {
+                            weekday: 'long',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </p>
+                        <p className="muted">{String(r.description)}</p>
+                      </>
                     )}
-                    <Button
-                      variant="destructive"
-                      onClick={() => {
-                        setEditing(r);
-                        open('delete');
-                      }}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </Card>
-              ))}
-            </div>
+                    <details className="record-actions">
+                      <summary>
+                        Manage {name === 'shoes' ? 'shoe' : singular}
+                      </summary>
+                      <div className="row">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setEditing(r);
+                            open('record');
+                          }}
+                        >
+                          Edit
+                        </Button>
+                        {name === 'routes' && (
+                          <Button
+                            variant="ghost"
+                            disabled={save.isPending}
+                            onClick={() =>
+                              save.mutate(
+                                {
+                                  id: String(r.id),
+                                  remove: !!saved.data?.some(
+                                    (s) => s.route_id === r.id,
+                                  ),
+                                },
+                                { onError: (e) => toast.error(e.message) },
+                              )
+                            }
+                          >
+                            <Bookmark size={15} aria-hidden="true" />
+                            {saved.data?.some((s) => s.route_id === r.id)
+                              ? 'Unsave'
+                              : 'Save route'}
+                          </Button>
+                        )}
+                        <Button
+                          variant="destructive"
+                          onClick={() => {
+                            setEditing(r);
+                            open('delete');
+                          }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </details>
+                  </Card>
+                ))}
+              </div>
+            </List>
           )}
         </>
       )}

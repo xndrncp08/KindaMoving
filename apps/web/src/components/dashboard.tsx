@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useSyncExternalStore } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowUpRight, Map, Upload } from 'lucide-react';
+import { ArrowUpRight, Map } from 'lucide-react';
 import {
   Card,
   EmptyState,
@@ -145,12 +145,6 @@ export function Dashboard({
               Plan a Route
             </Link>
           </Button>
-          <Button asChild>
-            <Link href="/app/activities#import">
-              <Upload size={16} aria-hidden="true" />
-              Import Run
-            </Link>
-          </Button>
         </div>
       </header>
 
@@ -261,9 +255,6 @@ export function Dashboard({
                   ? ` · ${distance(next.planned_distance_m, units)}`
                   : ''}
               </p>
-              <Button asChild variant="outline">
-                <Link href="/app/training">Open Training Week</Link>
-              </Button>
             </>
           ) : (
             <p className="next-empty">
@@ -362,7 +353,7 @@ export function Dashboard({
                 </tr>
               </thead>
               <tbody>
-                {runs.slice(0, 6).map((r) => (
+                {runs.slice(1, 6).map((r) => (
                   <tr key={r.id}>
                     <td suppressHydrationWarning>
                       <Link href={'/app/activities/' + r.id}>

@@ -90,7 +90,14 @@ export function Detail({
           }[name]
         }
       >
-        ← Back to your records
+        ← Back to{' '}
+        {name === 'activities'
+          ? 'runs'
+          : name === 'workouts'
+            ? 'training'
+            : name === 'shoes'
+              ? 'gear'
+              : 'routes'}
       </Link>
       <h1 className="page-title">{String(r.title)}</h1>
       {name === 'activities' && (
@@ -134,7 +141,7 @@ export function Detail({
             ?.filter((a) => a.shoe_id === id)
             .map((a) => (
               <p key={a.id}>
-                <Link href={'/app/activities/' + a.id}>
+                <Link className="history-link" href={'/app/activities/' + a.id}>
                   {a.started_at} · {a.title} ·{' '}
                   {distance(a.distance_m, profile.data?.units)}
                 </Link>
@@ -142,41 +149,43 @@ export function Detail({
             ))}
         </Card>
       )}
-      <Card>
-        <h2>Edit details</h2>
-        <RecordForm
-          name={name}
-          userId={userId}
-          record={r}
-          shoes={shoes.data || []}
-          onSaved={() => toast.success('Details updated.')}
-        />
-      </Card>
-      {/* Every record can be removed from its own page, so phones (where the
+      <details className="disclosure">
+        <summary>Edit details</summary>
+        <div className="stack">
+          <RecordForm
+            name={name}
+            userId={userId}
+            record={r}
+            shoes={shoes.data || []}
+            onSaved={() => toast.success('Details updated.')}
+          />
+          {/* Every record can be removed from its own page, so phones (where the
           list keeps only essentials) never lose delete. */}
-      <div className="row">
-        <ConfirmButton
-          variant="destructive"
-          disabled={remove.isPending}
-          title={`Delete “${String(r.title)}”?`}
-          description="This permanently removes the record and its linked data. Shoes still assigned to runs cannot be deleted."
-          confirmLabel="Delete Permanently"
-          onConfirm={() =>
-            remove.mutate(
-              { method: 'DELETE', recordId: id },
-              {
-                onSuccess: () => {
-                  toast.success('Deleted.');
-                  router.push(listPath);
-                },
-                onError: (e) => toast.error(e.message),
-              },
-            )
-          }
-        >
-          Delete
-        </ConfirmButton>
-      </div>
+          <div className="row">
+            <ConfirmButton
+              variant="destructive"
+              disabled={remove.isPending}
+              title={`Delete “${String(r.title)}”?`}
+              description="This permanently removes the record and its linked data. Shoes still assigned to runs cannot be deleted."
+              confirmLabel="Delete Permanently"
+              onConfirm={() =>
+                remove.mutate(
+                  { method: 'DELETE', recordId: id },
+                  {
+                    onSuccess: () => {
+                      toast.success('Deleted.');
+                      router.push(listPath);
+                    },
+                    onError: (e) => toast.error(e.message),
+                  },
+                )
+              }
+            >
+              Delete
+            </ConfirmButton>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }

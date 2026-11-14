@@ -78,14 +78,18 @@ describe('boundary validation', () => {
       workoutSchema.safeParse({ title: 'Easy', scheduled_on: 'bad' }).success,
     ).toBe(false);
   });
-  it.each(['https://evil.test', '//evil.test', '/\\evil.test', null])(
-    'keeps callback redirect local: %s',
-    (s) => expect(safeNext(s)).toBe('/app'),
+  it.each([
+    'https://evil.test',
+    '//evil.test',
+    '/\\evil.test',
+    '/\t/evil.test',
+    '/\n/evil.test',
+    null,
+  ])('keeps callback redirect local: %j', (s) =>
+    expect(safeNext(s)).toBe('/app'),
   );
-  it('permits a local recovery callback', () =>
-    expect(safeNext('/app/settings?recovery=1')).toBe(
-      '/app/settings?recovery=1',
-    ));
+  it('permits local paths with their query', () =>
+    expect(safeNext('/app/routes?start=1')).toBe('/app/routes?start=1'));
 });
 describe('basic metrics', () => {
   it('calculates pace without inventing zero-distance results', () => {

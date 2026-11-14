@@ -47,7 +47,7 @@ it('keeps CSP nonce, refreshed cookies and cache headers together', async () => 
               ],
               { 'Cache-Control': 'private, no-store' },
             );
-            return { data: null, error: null };
+            return { data: { claims: { sub: 'u1' } }, error: null };
           },
         },
       }) as unknown as ReturnType<typeof createServerClient>,
@@ -58,4 +58,44 @@ it('keeps CSP nonce, refreshed cookies and cache headers together', async () => 
   expect(response.headers.get('Content-Security-Policy')).toContain(
     response.headers.get('x-middleware-request-x-nonce')!,
   );
+});
+function session(claims: object | null, error: object | null = null) {
+  vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://pilot.supabase.co');
+  vi.stubEnv('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'public-key');
+  vi.mocked(createServerClient).mockReturnValue({
+    auth: {
+      getClaims: async () => ({ data: claims && { claims }, error }),
+    },
+  } as unknown as ReturnType<typeof createServerClient>);
+}
+it('sends signed-out runners to login and remembers where they were going', async () => {
+  session(null);
+  const response = await proxy(
+    new NextRequest('https://run.test/app/routes?start=1'),
+  );
+  expect(response.headers.get('location')).toBe(
+    'https://run.test/login?next=%2Fapp%2Froutes%3Fstart%3D1',
+  );
+  expect(response.headers.get('Cache-Control')).toBe('private, no-store');
+});
+it('leaves refresh failures to the server check instead of guessing', async () => {
+  session(null, { message: 'network' });
+  const response = await proxy(new NextRequest('https://run.test/app'));
+  expect(response.headers.get('location')).toBeNull();
+});
+it('skips the login form for a signed-in runner, unless a server check rejected the session', async () => {
+  session({ sub: 'u1' });
+  const signedIn = await proxy(
+    new NextRequest('https://run.test/login?next=%2Fapp%2Fgear'),
+  );
+  expect(signedIn.headers.get('location')).toBe('https://run.test/app/gear');
+  const rejected = await proxy(
+    new NextRequest('https://run.test/login?error=session'),
+  );
+  expect(rejected.headers.get('location')).toBeNull();
+});
+it('does not redirect API calls; they answer 401 themselves', async () => {
+  session(null);
+  const response = await proxy(new NextRequest('https://run.test/api/summary'));
+  expect(response.headers.get('location')).toBeNull();
 });

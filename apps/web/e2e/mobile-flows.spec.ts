@@ -20,7 +20,9 @@ async function login(page: Page, next = '/app') {
   }
   await page.goto('/login');
   await page.getByLabel('Email').fill(process.env.KM_E2E_EMAIL!);
-  await page.getByLabel('Password').fill(process.env.KM_E2E_PASSWORD!);
+  await page
+    .getByLabel('Password', { exact: true })
+    .fill(process.env.KM_E2E_PASSWORD!);
   await page.getByRole('button', { name: /log in/i }).click();
   await page.waitForURL(/\/app/);
   if (next !== '/app') await page.goto(next);

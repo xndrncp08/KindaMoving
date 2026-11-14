@@ -551,6 +551,7 @@ export function RoutePlanner({ userId }: { userId: string }) {
             </div>
           )}
           <form
+            id="planner-search"
             className="stack"
             noValidate
             onSubmit={handleSubmit((f) => {
@@ -726,13 +727,6 @@ export function RoutePlanner({ userId }: { userId: string }) {
                 ))}
               </div>
             )}
-            <Button disabled={generate.isPending}>
-              {generate.isPending
-                ? 'Searching the Network…'
-                : routes.length
-                  ? 'Find New Routes'
-                  : 'Find Routes'}
-            </Button>
           </form>
           {generate.error && (
             <ErrorState
@@ -760,6 +754,20 @@ export function RoutePlanner({ userId }: { userId: string }) {
               weighed.
             </p>
           ) : null}
+        </div>
+        <div className="panel-action" hidden={bodyHidden}>
+          <Button
+            type="submit"
+            form="planner-search"
+            variant={routes.length ? 'outline' : 'default'}
+            disabled={generate.isPending}
+          >
+            {generate.isPending
+              ? 'Finding routes…'
+              : routes.length
+                ? 'Find New Routes'
+                : 'Find Routes'}
+          </Button>
         </div>
       </section>
     </div>

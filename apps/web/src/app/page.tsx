@@ -8,7 +8,7 @@ import {
   Watch,
   Smartphone,
 } from 'lucide-react';
-import { Button, Card, Metric } from '@km/ui';
+import { Button, Card } from '@km/ui';
 import { Brand } from '@/components/brand';
 export default function Home() {
   return (
@@ -23,9 +23,7 @@ export default function Home() {
             Log in
           </Link>
           <Button asChild className="nav-cta">
-            <Link href="/login?mode=signup">
-              Find your stride <ArrowUpRight size={16} />
-            </Link>
+            <Link href="/login?mode=signup">Create an account</Link>
           </Button>
         </nav>
       </header>
@@ -44,17 +42,12 @@ export default function Home() {
             </p>
             <div className="row">
               <Button asChild>
-                <Link href="/login?mode=signup">
-                  Start your running story <ArrowUpRight size={16} />
-                </Link>
+                <Link href="/login?mode=signup">Create an account</Link>
               </Button>
               <Button asChild variant="outline">
                 <Link href="#inside">Take a look inside</Link>
               </Button>
             </div>
-            <p className="eyebrow muted" style={{ marginTop: 24 }}>
-              Built for consistency. Not just personal bests.
-            </p>
           </div>
           <div className="hero-visual">
             <svg
@@ -150,26 +143,26 @@ export default function Home() {
             {[
               [
                 Activity,
-                '01 / REVIEW',
+                'Review',
                 'Every mile counts.',
                 'Import GPX or FIT files, or log by hand. Splits, heart rate, elevation and a clear view of the work you put in.',
               ],
               [
                 CalendarDays,
-                '02 / PLAN',
+                'Plan',
                 'Make room for running.',
                 'Build a race plan or a single workout. Completed runs are matched to the plan. Enjoy that tiny dopamine hit.',
               ],
               [
                 Footprints,
-                '03 / EQUIP',
+                'Equip',
                 'Know when they’ve had it.',
                 'Assign shoes to your runs and keep an honest mileage history. Nostalgia is not cushioning.',
               ],
             ].map(([Icon, num, title, text]) => (
               <Card key={String(title)}>
                 <p className="feature-number">{String(num)}</p>
-                <Icon className="feature-icon" size={30} />
+                <Icon className="feature-icon" size={30} aria-hidden="true" />
                 <h3>{String(title)}</h3>
                 <p className="muted">{String(text)}</p>
               </Card>
@@ -188,23 +181,21 @@ export default function Home() {
               These figures are examples, not your activity data.
             </p>
           </div>
-          <div className="grid">
-            <Metric
-              label="Example weekly distance"
-              value="32.8 km"
-              detail="The small runs add up."
-            />
-            <Metric
-              label="Example activities"
-              value="4 runs"
-              detail="Consistency has entered the chat."
-            />
-            <Metric
-              label="Example average pace"
-              value="5:42 /km"
-              detail="Your pace. Your business."
-            />
-          </div>
+          <dl
+            className="instrument"
+            aria-label="Illustrative week · sample data"
+          >
+            {[
+              ['Weekly distance', '32.8 km'],
+              ['Activities', '4 runs'],
+              ['Average pace', '5:42 /km'],
+            ].map(([label, value]) => (
+              <div className="instrument-cell" key={label}>
+                <dt>{label}</dt>
+                <dd className="metric num">{value}</dd>
+              </div>
+            ))}
+          </dl>
         </section>
         <section className="section">
           <div className="grid two">
@@ -285,9 +276,7 @@ export default function Home() {
             perspective for the long run.
           </p>
           <Button asChild>
-            <Link href="/login?mode=signup">
-              Let’s get moving <ArrowUpRight size={16} />
-            </Link>
+            <Link href="/login?mode=signup">Create an account</Link>
           </Button>
         </section>
       </main>

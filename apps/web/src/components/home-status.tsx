@@ -46,7 +46,13 @@ export function HomeStatus({ userId }: { userId: string }) {
                 ? coros.data?.last_sync_at
                   ? `Synced ${ago(coros.data.last_sync_at)}`
                   : 'Connected, not synced yet'
-                : 'Not connected'}
+                : coros.error
+                  ? 'Status unavailable'
+                  : coros.data?.status === 'reauth_required'
+                    ? 'Reconnect required'
+                    : coros.data?.status === 'error'
+                      ? 'Connection needs attention'
+                      : 'Not connected'}
           </span>
         </span>
       </Link>

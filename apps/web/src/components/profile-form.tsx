@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { profileSchema, type Profile } from '@km/types';
-import { Button, Input, ErrorState, Skeleton, Card } from '@km/ui';
+import { Button, Input, ErrorState, Skeleton } from '@km/ui';
 import { api, keys, profileQuery } from '@/lib/queries';
 import { toast } from 'sonner';
 import { useUnsaved } from './unsaved';
@@ -181,8 +181,8 @@ function Editor({
         </div>
       </form>
       {!onboarding && (
-        <Card>
-          <h2>On this device</h2>
+        <section className="settings-subsection">
+          <h3>On this device</h3>
           <div className="form-grid">
             <label>
               Theme
@@ -204,7 +204,7 @@ function Editor({
               Compact activity list
             </label>
           </div>
-        </Card>
+        </section>
       )}
     </div>
   );

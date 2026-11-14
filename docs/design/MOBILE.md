@@ -130,6 +130,6 @@ latency and momentum remain hardware gates even when emulation passes.
 
 ## Credential-free refinement QA
 
-`npm run test:ui` runs 19 synthetic screens in both themes at phone/desktop sizes, axe WCAG A/AA scans and interaction/state regressions. `KM_UI_MATRIX=1 npm run test:ui` uses all 14 sizes above. The loopback read-only upstream is isolated from hosted data; fixtures are never runtime application defaults. The normal E2E configuration excludes these tests and retains its own auth/security assertions.
+`npm run test:ui` runs 19 synthetic screens in both themes at phone/desktop sizes, axe WCAG A/AA scans and interaction/state regressions. `KM_UI_MATRIX=1 npm run test:ui` uses all 14 sizes above, with the existing matrix’s touch/mobile context flags. The More regression uses actual emulated taps. The loopback read-only upstream is isolated from hosted data; fixtures are never runtime application defaults. The normal E2E configuration excludes these tests and retains its own auth/security assertions.
 
 The layout audit uses `checkVisibility()` as well as geometry so hidden descendants of closed native disclosures are not misclassified as obscured controls. Visible controls retain the same target-size, clipping and overflow checks. The shared header wraps under enlarged text; Settings is also checked at 200% root text. This is browser emulation, not physical-device or OS keyboard proof.

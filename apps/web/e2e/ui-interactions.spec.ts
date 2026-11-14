@@ -2,13 +2,18 @@ import { test, expect } from './fixtures/ui-test';
 import { activities, runId } from './fixtures/ui-data';
 import { audit } from './mobile-audit';
 
-test.use({ viewport: { width: 390, height: 844 }, reducedMotion: 'reduce' });
+test.use({
+  viewport: { width: 390, height: 844 },
+  reducedMotion: 'reduce',
+  hasTouch: true,
+  isMobile: true,
+});
 
 test('More contains secondary tools, closes with Back and restores focus', async ({
   page,
 }) => {
   await page.goto('/app/activities');
-  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).tap();
   const dialog = page.getByRole('dialog');
   await expect(
     dialog.getByRole('link', { name: 'Ghost', exact: true }),
@@ -22,7 +27,7 @@ test('More contains secondary tools, closes with Back and restores focus', async
   await expect(
     page.getByRole('button', { name: 'More', exact: true }),
   ).toBeFocused();
-  await page.getByRole('button', { name: 'More', exact: true }).click();
+  await page.getByRole('button', { name: 'More', exact: true }).tap();
   await page.keyboard.press('Escape');
   await expect(dialog).toBeHidden();
   await page.getByRole('link', { name: 'KindaMoving home' }).click();

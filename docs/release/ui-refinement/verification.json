@@ -26,5 +26,7 @@
     "available metrics only",
     "all metrics missing",
     "wrapped table without horizontal overflow"
-  ]
+  ],
+  "touch_followup_checks_passed": 156,
+  "matrix_context": "hasTouch below 1024px, isMobile below 768px, matching the existing matrix"
 }

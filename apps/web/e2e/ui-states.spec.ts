@@ -123,11 +123,7 @@ test('COROS running and failed sync states retain recovery actions', async ({
   });
 });
 
-test('conditions keep uncertainty and allow a location-permission recovery', async ({
-  page,
-  context,
-}) => {
-  await context.clearPermissions();
+test('conditions retain uncertainty and one-tap severity', async ({ page }) => {
   await page.route('**/api/conditions?**', (route) =>
     route.fulfill({
       json: {

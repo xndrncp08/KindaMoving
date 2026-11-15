@@ -41,6 +41,13 @@
 
 - **Auth shell** (`AuthShell`, `.auth`): one 440px column with the brand, content and legal links. At ≥960px a charcoal route panel (`RouteArt`, decorative and `aria-hidden`) joins it. Phones top-align content so the form does not jump when the keyboard resizes the viewport. Used by login, signup, reset request, `/auth/reset` and onboarding.
 - **Password field** (`PasswordField`): label wraps the input, and the 44px show/hide toggle sits outside the label so it never joins the input's accessible name. It uses `aria-pressed`.
+- **Password rules** (`PasswordRules`): a two-column checklist under new-password fields (12+ characters, letter, number, passwords match). Unmet rules show a hollow circle in muted text; met rules show a check in `--good`. Linked to the password input by `aria-describedby`, with screen-reader “(met)/(not yet)” text.
 - **Field feedback**: `.field-error` (danger) or `.field-hint` (muted; `.met` turns it `--good` with a check) directly under the control, linked by `aria-describedby`. Validation runs when a field is left, then live while it is corrected.
 - **Inbox state**: after signup/reset, the form gives way to "Check your inbox" with the address, a disabled "Resend in Ns" button and a way back. Copy is conditional ("If … has an account") so it never confirms an account exists.
 - **Buttons**: auth screens use one full-width 48px Volt action; Google, if enabled, is an outline button below an "or" divider.
+
+## Landing
+
+- **Night bands** (`.night`): the hero and closing statement scope the documented dark tokens (same values as `.dark`) to a region in either theme, so focus rings, buttons and badges adapt without new colours. The auth side panel uses the same scope.
+- **Run preview** (`RunPreview`): the app's own language (route, tabular stats, split bars with the fastest in Volt), captioned "Illustrative preview · sample data". It's shared by the landing hero and the auth panel.
+- **Bands, not card grids**: the section titles use `--text-2xl`, the pillars are separated by top rules, and the spotlights pair copy with one real-language visual each (provenance metrics, map symbology, watch face). Sample visuals are always captioned as sample data.

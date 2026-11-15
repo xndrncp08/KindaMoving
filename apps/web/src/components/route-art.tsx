@@ -1,14 +1,19 @@
-/** Illustrated route (not a GPS trace) shared by the landing hero and auth screens. */
+/** Illustrated route (not a GPS trace). Decorative: callers caption it. */
 export function RouteArt() {
   return (
     <svg
       className="route-art"
       viewBox="0 0 500 600"
-      aria-label="Illustrated running route, not a real GPS trace"
-      role="img"
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
     >
       <defs>
-        <pattern id="grid" width="42" height="42" patternUnits="userSpaceOnUse">
+        <pattern
+          id="route-art-grid"
+          width="42"
+          height="42"
+          patternUnits="userSpaceOnUse"
+        >
           <path
             d="M 42 0 L 0 0 0 42"
             fill="none"
@@ -18,7 +23,7 @@ export function RouteArt() {
           />
         </pattern>
       </defs>
-      <rect width="500" height="600" fill="url(#grid)" />
+      <rect width="500" height="600" fill="url(#route-art-grid)" />
       {[0, 1, 2, 3, 4, 5].map((i) => (
         <path
           key={i}
@@ -32,7 +37,7 @@ export function RouteArt() {
       <path
         d="M125 375L100 285Q100 240 160 238L250 232L281 135Q292 110 325 140L379 236L333 320L254 328L219 429L125 375Z"
         fill="none"
-        stroke="#d6fb52"
+        stroke="#d4ff3a"
         strokeWidth="5"
         strokeLinejoin="round"
       />
@@ -40,8 +45,8 @@ export function RouteArt() {
         cx="125"
         cy="375"
         r="9"
-        fill="#d6fb52"
-        stroke="#193b2b"
+        fill="#d4ff3a"
+        stroke="#161816"
         strokeWidth="4"
       />
     </svg>

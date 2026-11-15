@@ -5,6 +5,8 @@ import { browserSupabase } from '@/lib/supabase/client';
 import { authProblem } from '@/lib/auth-errors';
 import { toast } from 'sonner';
 import { PasswordField } from './password-field';
+import { PasswordRules } from './password-rules';
+import { meetsPolicy } from '@/lib/password';
 /** Settings password change, or (with `recovery`) the final step of a reset link. */
 export function PasswordForm({
   recovery,
@@ -15,6 +17,8 @@ export function PasswordForm({
 }) {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   return (
     <form
       className={recovery ? 'auth-form' : 'stack'}
@@ -25,7 +29,15 @@ export function PasswordForm({
         setBusy(true);
         setError('');
         const form = e.currentTarget;
-        const password = String(new FormData(form).get('password'));
+        if (!meetsPolicy(password) || password !== confirm) {
+          setError(
+            password !== confirm
+              ? 'Passwords don’t match.'
+              : 'Meet every requirement below.',
+          );
+          setBusy(false);
+          return;
+        }
         const db = browserSupabase();
         const { error } = await db.auth.updateUser({ password });
         if (error) {
@@ -40,6 +52,8 @@ export function PasswordForm({
           return;
         }
         form.reset();
+        setPassword('');
+        setConfirm('');
         setBusy(false);
         toast.success('Password updated.');
       }}
@@ -61,13 +75,27 @@ export function PasswordForm({
         minLength={12}
         maxLength={128}
         autoComplete="new-password"
-        enterKeyHint="done"
-        aria-describedby="new-password-hint"
+        enterKeyHint="next"
+        aria-describedby="new-password-rules"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
         required
       />
-      <p id="new-password-hint" className="field-hint">
-        12 or more characters. A short phrase works well.
-      </p>
+      <PasswordField
+        label="Confirm new password"
+        name="confirm"
+        maxLength={128}
+        autoComplete="new-password"
+        enterKeyHint="done"
+        value={confirm}
+        onChange={(e) => setConfirm(e.target.value)}
+        required
+      />
+      <PasswordRules
+        id="new-password-rules"
+        password={password}
+        confirm={confirm}
+      />
       {error && <ErrorState message={error} />}
       <Button variant={recovery ? 'default' : 'outline'} disabled={busy}>
         {busy ? 'Saving…' : recovery ? 'Save Password' : 'Update Password'}

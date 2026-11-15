@@ -148,3 +148,13 @@ Also corrected from rendered evidence: a failed read showed "Database rejected t
 ### Not verified
 
 Hosted Supabase confirmation/recovery email delivery, real Google OAuth, the `token_hash` email templates (an operator dashboard change, not applied), physical iOS/Android keyboards and password-manager save prompts, and native screen readers. "Remember me" is not offered: Supabase SSR keeps persistent cookies on this device until logout, and making that optional would mean changing cookie handling in both the proxy and the client.
+
+### Landing and signup follow-up
+
+Evidence: [`release/landing/before`](landing/before) and [`release/landing/after`](landing/after).
+
+Review feedback said the first pass hadn't redesigned the landing page or signup. That was accurate: the landing page still had the original template (tiny section headings, icon card grids, an overlapping hero panel, a placeholder phone, and a nav that wrapped on phones), and signup was login with a different headline.
+
+- **Landing:** a full-width night hero with a two-line display headline and the shared `RunPreview`. Card grids became big-type bands: pillars, then Analyze (real `Provenance` markers and week bars), Routes (the app's map symbology) and COROS (watch face), all captioned as sample data. The closing statement is a night band. On phones the header keeps brand + Log in.
+- **Signup:** confirm password plus a live requirements checklist (12+ characters, a letter, a number, match). The same rules apply to `/auth/reset` and Settings. On wide screens the panel lists what an account includes above the run preview.
+- Defects caught from renders: the week bars inherited the training calendar's global `.day` rule (renamed `.spot-day`), and the headline broke into four lines.

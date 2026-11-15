@@ -1,13 +1,15 @@
 import Link from 'next/link';
 import { Brand } from './brand';
-import { RouteArt } from './route-art';
-/** Shared frame for sign-in, recovery and onboarding: one column, plus a route panel on wide screens. */
+import { RunPreview } from './run-preview';
+/** Shared frame for sign-in, recovery and onboarding: one column, plus a night panel on wide screens. */
 export function AuthShell({
   children,
   legal,
+  pitch,
 }: {
   children: React.ReactNode;
   legal?: React.ReactNode;
+  pitch?: React.ReactNode;
 }) {
   return (
     <main id="main" className="auth">
@@ -23,9 +25,9 @@ export function AuthShell({
           )}
         </p>
       </div>
-      <aside className="auth-art" aria-hidden="true">
-        <RouteArt />
-        <p>Forward is a pace.</p>
+      <aside className="auth-art night">
+        {pitch}
+        <RunPreview />
       </aside>
     </main>
   );

@@ -4,7 +4,7 @@ The implementation follows Supabase's current SSR cookie client guidance, checke
 
 `lib/supabase/server.ts` creates a request-scoped server client. `proxy.ts` refreshes/verifies claims, propagates cookies and the cache headers supplied by `@supabase/ssr`, and marks personalized responses no-store. Server components cannot write cookies, so they rely on this proxy. Route handlers and protected layouts call `getUser()` for authoritative current-user verification. `getSession()` and user-editable metadata are never trusted for access control.
 
-Email/password signup requires at least 12 characters in the app; match this minimum in Supabase Auth configuration. Login does not enforce it (older accounts may predate it). Enable email confirmation. Login, logout and password update use actual Supabase outcomes. Signup confirmation and password recovery must be tested with the project's actual SMTP configuration.
+New passwords (signup, reset, Settings) must have 12 or more characters, a letter and a number, entered twice. A live checklist (`PasswordRules`, rules in `lib/password.ts`) shows each requirement as it is met. Set the matching server policy in Supabase Auth: **minimum password length 12** and **password requirements "letters and digits"** (`letters_digits`; already set in the local `supabase/config.toml`). Without that, the API would still accept weaker passwords sent directly. Login does not enforce the policy, because older accounts may predate it. Enable email confirmation. Login, logout and password update use actual Supabase outcomes. Signup confirmation and password recovery must be tested with the project's actual SMTP configuration.
 
 ## Journeys and states
 

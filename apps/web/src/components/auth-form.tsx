@@ -17,6 +17,8 @@ import {
 } from '@/lib/auth-errors';
 import { AuthShell } from './auth-shell';
 import { PasswordField } from './password-field';
+import { PasswordRules } from './password-rules';
+import { newPassword } from '@/lib/password';
 
 type Mode = 'login' | 'signup' | 'reset';
 const email = z.email({
@@ -28,16 +30,15 @@ const schemas = {
     email,
     password: z.string().min(1, { error: 'Enter your password.' }),
   }),
-  signup: z.object({
-    email,
-    password: z
-      .string()
-      .min(12, { error: 'Use at least 12 characters.' })
-      .max(128, { error: 'Use 128 characters or fewer.' }),
-  }),
+  signup: z
+    .object({ email, password: newPassword, confirm: z.string() })
+    .refine((v) => v.password === v.confirm, {
+      path: ['confirm'],
+      error: 'Passwords don’t match.',
+    }),
   reset: z.object({ email }),
 };
-type Fields = { email: string; password: string };
+type Fields = { email: string; password: string; confirm: string };
 const copy = {
   login: {
     title: 'Welcome back.',
@@ -86,7 +87,7 @@ export function AuthForm() {
   const form = useForm<Fields>({
     // Validate once a field is left, then live while correcting it — not while first typing.
     mode: 'onTouched',
-    defaultValues: { email: '', password: '' },
+    defaultValues: { email: '', password: '', confirm: '' },
     resolver: zodResolver(schemas[mode]) as never,
   });
   const {
@@ -123,7 +124,8 @@ export function AuthForm() {
         setSent({ kind: mode, from: mode, to: values.email });
       } else if (mode === 'signup') {
         const { data, error } = await db.auth.signUp({
-          ...values,
+          email: values.email,
+          password: values.password,
           options: { emailRedirectTo: callback(safeNext(next)) },
         });
         // An existing address gets the same response as a new one (no account enumeration).
@@ -134,7 +136,10 @@ export function AuthForm() {
         }
         setSent({ kind: mode, from: mode, to: values.email });
       } else {
-        const { error } = await db.auth.signInWithPassword(values);
+        const { error } = await db.auth.signInWithPassword({
+          email: values.email,
+          password: values.password,
+        });
         if (error) throw error;
         location.assign(safeNext(next));
         return;
@@ -162,7 +167,10 @@ export function AuthForm() {
   const shownProblem = problem?.mode === mode ? problem : null;
   const shownSent = sent?.from === mode ? sent : null;
   const text = copy[mode];
-  const passwordLength = useWatch({ control, name: 'password' }).length;
+  const [password, confirm] = useWatch({
+    control,
+    name: ['password', 'confirm'],
+  });
 
   return (
     <AuthShell
@@ -173,6 +181,26 @@ export function AuthForm() {
             <Link href="/terms">Terms</Link> and{' '}
             <Link href="/privacy">Privacy Policy</Link>.
           </>
+        ) : undefined
+      }
+      pitch={
+        mode === 'signup' ? (
+          <div className="auth-pitch">
+            <h2>Everything your running needs. Nothing it doesn’t.</h2>
+            <ul>
+              {[
+                'Import runs from COROS, GPX or FIT files',
+                'Routes on mapped, runnable ways',
+                'Training plans matched to the runs you do',
+                'Honest mileage for every pair of shoes',
+              ].map((t) => (
+                <li key={t}>
+                  <Check aria-hidden="true" />
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
         ) : undefined
       }
     >
@@ -236,40 +264,46 @@ export function AuthForm() {
                       autoComplete={
                         mode === 'signup' ? 'new-password' : 'current-password'
                       }
-                      enterKeyHint="go"
+                      enterKeyHint={mode === 'signup' ? 'next' : 'go'}
                       aria-invalid={!!errors.password}
                       aria-describedby={
-                        mode === 'signup'
-                          ? 'password-hint'
-                          : errors.password
-                            ? 'password-error'
-                            : undefined
+                        [
+                          errors.password && 'password-error',
+                          mode === 'signup' && 'password-rules',
+                        ]
+                          .filter(Boolean)
+                          .join(' ') || undefined
                       }
                       {...register('password')}
                     />
-                    {errors.password ? (
-                      <p
-                        id={
-                          mode === 'signup' ? 'password-hint' : 'password-error'
-                        }
-                        className="field-error"
-                      >
+                    {errors.password && (
+                      <p id="password-error" className="field-error">
                         {errors.password.message}
                       </p>
-                    ) : (
-                      mode === 'signup' && (
-                        <p
-                          id="password-hint"
-                          className={
-                            passwordLength >= 12
-                              ? 'field-hint met'
-                              : 'field-hint'
+                    )}
+                    {mode === 'signup' && (
+                      <>
+                        <PasswordField
+                          label="Confirm password"
+                          autoComplete="new-password"
+                          enterKeyHint="go"
+                          aria-invalid={!!errors.confirm}
+                          aria-describedby={
+                            errors.confirm ? 'confirm-error' : undefined
                           }
-                        >
-                          {passwordLength >= 12 && <Check aria-hidden="true" />}
-                          12 or more characters. A short phrase works well.
-                        </p>
-                      )
+                          {...register('confirm')}
+                        />
+                        {errors.confirm && (
+                          <p id="confirm-error" className="field-error">
+                            {errors.confirm.message}
+                          </p>
+                        )}
+                        <PasswordRules
+                          id="password-rules"
+                          password={password}
+                          confirm={confirm}
+                        />
+                      </>
                     )}
                     {mode === 'login' && (
                       <Link className="auth-aside-link" href={href('reset')}>

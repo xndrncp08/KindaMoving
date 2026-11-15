@@ -47,13 +47,17 @@ afterEach(() => {
   vi.clearAllMocks();
   vi.unstubAllGlobals();
 });
-function fill(email: string, password?: string) {
+function fill(email: string, password?: string, confirm?: string) {
   fireEvent.change(screen.getByLabelText('Email'), {
     target: { value: email },
   });
   if (password !== undefined)
     fireEvent.change(screen.getByLabelText('Password', { exact: true }), {
       target: { value: password },
+    });
+  if (confirm !== undefined)
+    fireEvent.change(screen.getByLabelText('Confirm password'), {
+      target: { value: confirm },
     });
 }
 
@@ -114,10 +118,16 @@ it('offers to resend confirmation when the email is unconfirmed', async () => {
 it('validates the signup password before contacting the provider', async () => {
   state.query = 'mode=signup';
   render(<AuthForm />);
-  fill('runner@example.test', 'too-short');
+  fill('runner@example.test', 'no digits here at all', 'different');
   fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
-  await screen.findByText('Use at least 12 characters.');
+  await screen.findByText('Meet every requirement below.');
+  await screen.findByText('Passwords don’t match.');
   expect(state.signup).not.toHaveBeenCalled();
+  // The checklist names exactly what is missing.
+  expect(screen.getByText('12 or more characters').closest('li')).toHaveClass(
+    'met',
+  );
+  expect(screen.getByText('A number').closest('li')).not.toHaveClass('met');
   expect(screen.getByLabelText('Password', { exact: true })).toHaveAttribute(
     'aria-invalid',
     'true',
@@ -135,12 +145,13 @@ describe('signup confirmation', () => {
     state.query = 'mode=signup';
     state.signup.mockResolvedValue(response);
     render(<AuthForm />);
-    fill('runner@example.test', 'a-long-password');
+    fill('runner@example.test', 'long run sunday 7', 'long run sunday 7');
     fireEvent.click(screen.getByRole('button', { name: 'Create Account' }));
     await screen.findByRole('heading', { name: 'Check your inbox.' });
     expect(
       screen.getByRole('button', { name: /Resend in \d+s/ }),
     ).toBeDisabled();
+    expect(state.signup.mock.calls[0][0]).not.toHaveProperty('confirm');
     expect(state.signup.mock.calls[0][0].options.emailRedirectTo).toBe(
       'https://km.test/auth/callback?next=%2Fapp',
     );

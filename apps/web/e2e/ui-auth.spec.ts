@@ -158,7 +158,14 @@ test.describe('journeys', () => {
     await expect(email).toHaveAttribute('aria-invalid', 'true');
     await expect(email).toHaveAttribute('aria-describedby', 'email-error');
     await page.getByLabel('Password', { exact: true }).fill('twelve chars');
-    await expect(page.locator('#password-hint')).toHaveClass(/met/);
+    const rule = (name: string) =>
+      page.locator('#password-rules li', { hasText: name });
+    await expect(rule('12 or more characters')).toHaveClass(/met/);
+    await expect(rule('A number')).not.toHaveClass(/met/);
+    await page.getByLabel('Password', { exact: true }).fill('twelve chars 1');
+    await page.getByLabel('Confirm password').fill('twelve chars 1');
+    await expect(rule('A number')).toHaveClass(/met/);
+    await expect(rule('Passwords match')).toHaveClass(/met/);
   });
 
   test('signup confirmation offers resend after a cooldown, and Back works', async ({
@@ -175,7 +182,8 @@ test.describe('journeys', () => {
     await page.getByLabel('Email').fill('new@example.test');
     await page
       .getByLabel('Password', { exact: true })
-      .fill('a long enough phrase');
+      .fill('a long enough phrase 7');
+    await page.getByLabel('Confirm password').fill('a long enough phrase 7');
     await page.getByRole('button', { name: 'Create Account' }).click();
     await expect(
       page.getByRole('heading', { name: 'Check your inbox.' }),

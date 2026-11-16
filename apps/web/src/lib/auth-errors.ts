@@ -39,6 +39,12 @@ export function authProblem(error: unknown): AuthProblem {
         message:
           'For security, log out and back in, then change your password.',
       };
+    // Supabase's built-in mailer only delivers to project team addresses until custom SMTP is set up.
+    case 'email_address_not_authorized':
+      return {
+        message:
+          'We can’t send email to this address yet. Try again later, or contact support.',
+      };
     case 'signup_disabled':
       return { message: 'New accounts are paused right now.' };
     case 'session_not_found':

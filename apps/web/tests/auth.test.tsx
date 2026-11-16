@@ -199,6 +199,7 @@ describe('authProblem', () => {
     [{ name: 'AuthRetryableFetchError' }, /couldn’t reach/],
     [new TypeError('Failed to fetch'), /couldn’t reach/],
     [apiError('weak_password', 422), /stronger password/],
+    [apiError('email_address_not_authorized'), /can’t send email/],
     [apiError('something_new'), /Something went wrong/],
   ])('maps %o', (error, message) =>
     expect(authProblem(error).message).toMatch(message),
